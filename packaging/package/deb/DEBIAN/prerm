@@ -1,0 +1,18 @@
+#!/bin/bash
+# prerm script for monitor-agent Debian package
+
+set -e
+
+SERVICE_NAME="las-agent"
+
+# Stop and disable service if running
+if systemctl is-active --quiet $SERVICE_NAME; then
+    systemctl stop $SERVICE_NAME
+fi
+
+if systemctl is-enabled --quiet $SERVICE_NAME 2>/dev/null; then
+    systemctl disable $SERVICE_NAME
+fi
+
+systemctl daemon-reload
+

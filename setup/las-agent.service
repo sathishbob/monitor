@@ -1,0 +1,40 @@
+[Unit]
+Description=Lab Server Monitoring AI Agent
+Documentation=https://github.com/your-repo/monitor
+After=network.target elasticsearch.service
+Wants=elasticsearch.service
+
+[Service]
+Type=simple
+User=las-agent
+Group=las-agent
+WorkingDirectory=/opt/las-agent
+ExecStart=/opt/las-agent/setup/run_service.sh
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=las-agent
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/las-agent /var/log
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+Environment=ES_HOST=http://localhost:9200
+Environment=ES_INDEX=lab_monitoring
+Environment=INTERVAL=30
+
+[Install]
+WantedBy=multi-user.target
+
+

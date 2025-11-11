@@ -1,0 +1,58 @@
+#!/bin/bash
+# postinst script for monitor-agent Debian package
+
+set -e
+
+# Configuration
+CONFIG_DIR="/opt/las-agent"
+CONFIG_FILE="$CONFIG_DIR/config.json"
+SERVICE_FILE="/etc/systemd/system/las-agent.service"
+SERVICE_NAME="las-agent"
+
+echo "Configuring las-agent..."
+
+# Create user if it doesn't exist
+if ! id -u monitor >/dev/null 2>&1; then
+    useradd -r -s /bin/false -d $CONFIG_DIR monitor
+    echo "Created monitor user"
+fi
+
+# Create installation directory
+mkdir -p $CONFIG_DIR
+chown monitor:monitor $CONFIG_DIR
+
+# Create logs directory
+mkdir -p /var/log/las-agent
+chown monitor:monitor /var/log/las-agent
+
+# Install Python dependencies
+echo "Installing Python dependencies..."
+cd $CONFIG_DIR
+python3 -m venv venv
+. venv/bin/activate
+pip install --upgrade pip >/dev/null 2>&1
+pip install -r requirements.txt >/dev/null 2>&1
+deactivate
+
+# Setup configuration if it doesn't exist
+if [ ! -f "$CONFIG_FILE" ]; then
+    cp config.json.default "$CONFIG_FILE" 2>/dev/null || true
+fi
+
+# Setup systemd service
+if [ -f "$SERVICE_FILE" ]; then
+    # Reload systemd
+    systemctl daemon-reload
+    
+    # Enable service
+    systemctl enable $SERVICE_NAME >/dev/null 2>&1
+    
+echo "las-agent service installed and enabled"
+echo "To start the service, run: systemctl start $SERVICE_NAME"
+echo "To check status: systemctl status $SERVICE_NAME"
+else
+    echo "Warning: Service file not found at $SERVICE_FILE"
+fi
+
+echo "las-agent installed successfully"
+

@@ -1,0 +1,19 @@
+Package: las-agent
+Version: 1.0.0-1
+Section: admin
+Priority: optional
+Architecture: amd64
+Depends: python3 (>= 3.8), python3-pip, curl, systemd
+Recommends: elasticsearch
+Maintainer: Lab Server Monitoring Team <support@example.com>
+Description: Lab Server Monitoring AI Agent
+ Comprehensive monitoring and AI analytics for lab server environments.
+ Features:
+  - Real-time performance monitoring
+  - User activity tracking
+  - Command execution monitoring
+  - AI-powered anomaly detection
+  - Engagement scoring
+  - Inactivity alerts
+  - Cross-server comparison
+
