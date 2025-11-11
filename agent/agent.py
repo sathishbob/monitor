@@ -42,6 +42,22 @@ from .ai_model import AIModel
 from .es_manager import ElasticsearchManager
 from .data_aggregator import DataAggregator
 
+# Import new monitoring modules
+from .filesystem_monitor import FileSystemMonitor
+from .error_debug_monitor import ErrorDebugMonitor
+from .dev_environment_monitor import DevEnvironmentMonitor
+from .browser_activity_monitor import BrowserActivityMonitor
+from .code_quality_monitor import CodeQualityMonitor
+from .package_dependency_monitor import PackageDependencyMonitor
+from .collaboration_monitor import CollaborationMonitor
+from .learning_path_monitor import LearningPathMonitor
+from .resource_access_monitor import ResourceAccessMonitor
+from .time_distribution_analyzer import TimeDistributionAnalyzer
+from .hardware_utilization_monitor import HardwareUtilizationMonitor
+from .network_behavior_monitor import NetworkBehaviorMonitor
+from .terminal_console_analyzer import TerminalConsoleAnalyzer
+from .project_lifecycle_monitor import ProjectLifecycleMonitor
+
 # Platform-specific imports
 import platform
 if platform.system() == "Windows":
@@ -226,7 +242,25 @@ class MonitorAgent:
             server_id=server_id,
             es_manager=self.es_manager
         )
-        
+
+        # Initialize new advanced monitoring modules
+        self.filesystem_monitor = FileSystemMonitor(es_manager=self.es_manager)
+        self.error_debug_monitor = ErrorDebugMonitor(es_manager=self.es_manager)
+        self.dev_environment_monitor = DevEnvironmentMonitor(es_manager=self.es_manager)
+        self.browser_activity_monitor = BrowserActivityMonitor(es_manager=self.es_manager)
+        self.code_quality_monitor = CodeQualityMonitor(es_manager=self.es_manager)
+        self.package_dependency_monitor = PackageDependencyMonitor(es_manager=self.es_manager)
+        self.collaboration_monitor = CollaborationMonitor(es_manager=self.es_manager)
+        self.learning_path_monitor = LearningPathMonitor(es_manager=self.es_manager)
+        self.resource_access_monitor = ResourceAccessMonitor(es_manager=self.es_manager)
+        self.time_distribution_analyzer = TimeDistributionAnalyzer(es_manager=self.es_manager)
+        self.hardware_utilization_monitor = HardwareUtilizationMonitor(es_manager=self.es_manager)
+        self.network_behavior_monitor = NetworkBehaviorMonitor(es_manager=self.es_manager)
+        self.terminal_console_analyzer = TerminalConsoleAnalyzer(es_manager=self.es_manager)
+        self.project_lifecycle_monitor = ProjectLifecycleMonitor(es_manager=self.es_manager)
+
+        logger.info("All 14 new advanced monitoring modules initialized")
+
         # System state and control
         self.running = False
         self.monitoring_thread = None

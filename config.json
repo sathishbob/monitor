@@ -56,6 +56,96 @@
       "status"
     ]
   },
+  "advanced_monitoring": {
+    "filesystem_tracking": {
+      "enabled": true,
+      "watch_directories": ["/home", "/workspace", "/projects"],
+      "track_git_operations": true,
+      "scan_interval_seconds": 300
+    },
+    "error_debugging": {
+      "enabled": true,
+      "track_compilation_errors": true,
+      "track_runtime_errors": true,
+      "track_test_failures": true,
+      "auto_mark_resolved": true
+    },
+    "development_environment": {
+      "enabled": true,
+      "detect_ides": true,
+      "track_plugins": true,
+      "monitor_environments": true
+    },
+    "browser_activity": {
+      "enabled": true,
+      "classify_educational": true,
+      "track_video_tutorials": true,
+      "educational_threshold_minutes": 10
+    },
+    "code_quality": {
+      "enabled": true,
+      "analyze_on_save": false,
+      "track_test_coverage": true,
+      "quality_score_threshold": 70
+    },
+    "package_dependency": {
+      "enabled": true,
+      "track_installations": true,
+      "detect_conflicts": true,
+      "monitor_virtualenvs": true
+    },
+    "collaboration": {
+      "enabled": true,
+      "detect_pair_programming": true,
+      "track_code_reviews": true,
+      "monitor_help_requests": true
+    },
+    "learning_path": {
+      "enabled": true,
+      "track_exercises": true,
+      "track_assignments": true,
+      "track_quizzes": true,
+      "milestone_tracking": true
+    },
+    "resource_access": {
+      "enabled": true,
+      "track_databases": true,
+      "track_apis": true,
+      "track_cloud_services": true,
+      "track_remote_connections": true
+    },
+    "time_distribution": {
+      "enabled": true,
+      "track_activity_blocks": true,
+      "detect_context_switches": true,
+      "analyze_productivity_patterns": true
+    },
+    "hardware_utilization": {
+      "enabled": true,
+      "track_gpu_usage": true,
+      "track_peripherals": true,
+      "detect_monitors": true
+    },
+    "network_behavior": {
+      "enabled": true,
+      "track_transfers": true,
+      "track_repository_access": true,
+      "bandwidth_threshold_mbps": 100
+    },
+    "terminal_console": {
+      "enabled": true,
+      "analyze_bash_history": true,
+      "track_sessions": true,
+      "proficiency_analysis": true
+    },
+    "project_lifecycle": {
+      "enabled": true,
+      "track_builds": true,
+      "track_deployments": true,
+      "track_version_tags": true,
+      "track_milestones": true
+    }
+  },
   "inactivity_alert": {
     "enabled": false,
     "webhook_url": null,
