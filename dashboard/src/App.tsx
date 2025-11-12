@@ -2186,7 +2186,7 @@ export default function App() {
           {cmds.data.length === 0 ? (
             <NoDataMessage message="No command data available for the selected time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={290}>
+          <ResponsiveContainer width="100%" height={330}>
             <BarChart data={(() => {
               // Extract commands from the correct data structure with multi-index support
               const commandCounts: Record<string, Record<string, { count: number; dangerous: boolean }>> = {};
@@ -2276,13 +2276,13 @@ export default function App() {
               return processed;
             })()}>
           <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="command" 
+              <XAxis
+                dataKey="command"
                 interval="preserveStartEnd"
-                angle={-45} 
-                textAnchor="end" 
-                height={120}
-                tick={{ fontSize: 9 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                tick={{ fontSize: 10 }}
                 tickFormatter={(value) => {
                   // Truncate long commands for display
                   if (value.length > 40) {
@@ -2394,7 +2394,7 @@ export default function App() {
           {perfData.length === 0 ? (
             <NoDataMessage message="No CPU data available for the selected time range. Try adjusting the date filter or selecting a different time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={330}>
             <LineChart data={perfData}>
           <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -2481,7 +2481,7 @@ export default function App() {
                 })
               ) : (
                 // Show single line when specific index is selected
-                <Line type="monotone" dataKey="cpu" stroke="#8884d8" name="CPU %" strokeWidth={2} connectNulls={true} />
+                <Line type="monotone" dataKey="cpu" stroke="#8884d8" name="CPU %" strokeWidth={2} connectNulls={true} dot={false} />
               )}
         </LineChart>
       </ResponsiveContainer>
@@ -2491,7 +2491,7 @@ export default function App() {
           {perfData.length === 0 ? (
             <NoDataMessage message="No Memory data available for the selected time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={330}>
             <LineChart data={perfData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -2577,7 +2577,7 @@ export default function App() {
                 })
               ) : (
                 // Show single line when specific index is selected
-                <Line type="monotone" dataKey="memory" stroke="#82ca9d" name="Memory %" strokeWidth={2} connectNulls={true} />
+                <Line type="monotone" dataKey="memory" stroke="#82ca9d" name="Memory %" strokeWidth={2} connectNulls={true} dot={false} />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -2587,7 +2587,7 @@ export default function App() {
           {perfData.length === 0 ? (
             <NoDataMessage message="No Disk data available for the selected time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={330}>
             <LineChart data={perfData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -2673,7 +2673,7 @@ export default function App() {
                 })
               ) : (
                 // Show single line when specific index is selected
-                <Line type="monotone" dataKey="disk" stroke="#ffc658" name="Disk GB" strokeWidth={2} connectNulls={true} />
+                <Line type="monotone" dataKey="disk" stroke="#ffc658" name="Disk GB" strokeWidth={2} connectNulls={true} dot={false} />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -2683,18 +2683,18 @@ export default function App() {
           {perfData.length === 0 ? (
             <NoDataMessage message="No network RX data available for the selected time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={330}>
             <LineChart data={perfData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="dateTime"
                 tick={{ fontSize: 10 }}
                 angle={-45}
                 textAnchor="end"
                 height={100}
                 tickFormatter={(value, index) => {
-                  // Only show every 3rd tick to reduce clutter
-                  if (index % 3 !== 0) {
+                  // Only show every 5th tick to reduce clutter
+                  if (index % 5 !== 0) {
                     return '';
                   }
                   
@@ -2769,7 +2769,7 @@ export default function App() {
                 })
               ) : (
                 // Show single line when specific index is selected
-                <Line type="monotone" dataKey="network_rx" stroke="#8884d8" name="RX MB" strokeWidth={2} connectNulls={true} />
+                <Line type="monotone" dataKey="network_rx" stroke="#8884d8" name="RX MB" strokeWidth={2} connectNulls={true} dot={false} />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -2779,18 +2779,18 @@ export default function App() {
           {perfData.length === 0 ? (
             <NoDataMessage message="No network TX data available for the selected time range." />
           ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={330}>
             <LineChart data={perfData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="dateTime"
                 tick={{ fontSize: 10 }}
                 angle={-45}
                 textAnchor="end"
                 height={100}
                 tickFormatter={(value, index) => {
-                  // Only show every 3rd tick to reduce clutter
-                  if (index % 3 !== 0) {
+                  // Only show every 5th tick to reduce clutter
+                  if (index % 5 !== 0) {
                     return '';
                   }
                   
@@ -2865,7 +2865,7 @@ export default function App() {
                 })
               ) : (
                 // Show single line when specific index is selected
-                <Line type="monotone" dataKey="network_tx" stroke="#82ca9d" name="TX MB" strokeWidth={2} connectNulls={true} />
+                <Line type="monotone" dataKey="network_tx" stroke="#82ca9d" name="TX MB" strokeWidth={2} connectNulls={true} dot={false} />
               )}
             </LineChart>
           </ResponsiveContainer>
