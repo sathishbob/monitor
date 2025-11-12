@@ -1,0 +1,229 @@
+# New TypeScript Interfaces to Add After Line 227 in App.tsx
+
+// New monitoring module interfaces
+interface FileSystemDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    files_created?: number;
+    files_modified?: number;
+    files_deleted?: number;
+    total_lines?: number;
+    git_commits?: number;
+    languages?: Record<string, number>;
+    project_type?: string;
+  };
+}
+
+interface ErrorDebugDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    error_count?: number;
+    error_type?: string;
+    resolution_time_minutes?: number;
+    debug_sessions?: number;
+    stack_trace?: string;
+  };
+}
+
+interface DevEnvironmentDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    ide_name?: string;
+    usage_minutes?: number;
+    plugins?: string[];
+    configurations?: Record<string, any>;
+  };
+}
+
+interface BrowserActivityDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    site_url?: string;
+    site_category?: string;
+    is_educational?: boolean;
+    duration_minutes?: number;
+    page_title?: string;
+  };
+}
+
+interface CodeQualityDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    file_path?: string;
+    function_count?: number;
+    comment_ratio?: number;
+    test_coverage?: number;
+    complexity_score?: number;
+    quality_score?: number;
+  };
+}
+
+interface PackageDependencyDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    package_name?: string;
+    package_version?: string;
+    install_time?: string;
+    dependency_count?: number;
+    has_conflicts?: boolean;
+    virtual_env?: string;
+  };
+}
+
+interface CollaborationDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    collaboration_type?: string; // pair_programming, code_review, help_request
+    participants?: number;
+    duration_minutes?: number;
+    code_files_shared?: number;
+  };
+}
+
+interface LearningPathDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    exercise_name?: string;
+    assignment_name?: string;
+    quiz_score?: number;
+    milestone?: string;
+    certificate?: string;
+    completion_percent?: number;
+  };
+}
+
+interface ResourceAccessDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    resource_type?: string; // database, api, cloud, remote
+    resource_name?: string;
+    access_count?: number;
+    data_transferred_mb?: number;
+    response_time_ms?: number;
+  };
+}
+
+interface TimeDistributionDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    activity_type?: string;
+    duration_minutes?: number;
+    context_switches?: number;
+    focus_score?: number;
+    productivity_score?: number;
+  };
+}
+
+interface HardwareUtilizationDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    gpu_utilization?: number;
+    gpu_memory_used_mb?: number;
+    peripheral_type?: string;
+    peripheral_usage_minutes?: number;
+  };
+}
+
+interface NetworkBehaviorDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    transfer_type?: string;
+    bytes_transferred?: number;
+    repository?: string;
+    bandwidth_mbps?: number;
+    connection_count?: number;
+  };
+}
+
+interface TerminalConsoleDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    command?: string;
+    command_category?: string;
+    execution_time_ms?: number;
+    proficiency_score?: number;
+    session_duration_minutes?: number;
+  };
+}
+
+interface ProjectLifecycleDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    project_name?: string;
+    lifecycle_stage?: string; // creation, development, build, test, deployment
+    stage_duration_minutes?: number;
+    success?: boolean;
+    error_count?: number;
+  };
+}
+
+# Data Fetching Hooks to Add After Line 528
+
+  // New monitoring module data hooks
+  const filesystemData = useESWithDateFilter<FileSystemDoc>(baseUrl, index, 'event_type:filesystem_activity', startDate, endDate, availableIndices);
+  const errorDebugData = useESWithDateFilter<ErrorDebugDoc>(baseUrl, index, 'event_type:error_debug', startDate, endDate, availableIndices);
+  const devEnvironmentData = useESWithDateFilter<DevEnvironmentDoc>(baseUrl, index, 'event_type:dev_environment', startDate, endDate, availableIndices);
+  const browserActivityData = useESWithDateFilter<BrowserActivityDoc>(baseUrl, index, 'event_type:browser_activity', startDate, endDate, availableIndices);
+  const codeQualityData = useESWithDateFilter<CodeQualityDoc>(baseUrl, index, 'event_type:code_quality', startDate, endDate, availableIndices);
+  const packageDependencyData = useESWithDateFilter<PackageDependencyDoc>(baseUrl, index, 'event_type:package_dependency', startDate, endDate, availableIndices);
+  const collaborationData = useESWithDateFilter<CollaborationDoc>(baseUrl, index, 'event_type:collaboration', startDate, endDate, availableIndices);
+  const learningPathData = useESWithDateFilter<LearningPathDoc>(baseUrl, index, 'event_type:learning_path', startDate, endDate, availableIndices);
+  const resourceAccessData = useESWithDateFilter<ResourceAccessDoc>(baseUrl, index, 'event_type:resource_access', startDate, endDate, availableIndices);
+  const timeDistributionData = useESWithDateFilter<TimeDistributionDoc>(baseUrl, index, 'event_type:time_distribution', startDate, endDate, availableIndices);
+  const hardwareUtilizationData = useESWithDateFilter<HardwareUtilizationDoc>(baseUrl, index, 'event_type:hardware_utilization', startDate, endDate, availableIndices);
+  const networkBehaviorData = useESWithDateFilter<NetworkBehaviorDoc>(baseUrl, index, 'event_type:network_behavior', startDate, endDate, availableIndices);
+  const terminalConsoleData = useESWithDateFilter<TerminalConsoleDoc>(baseUrl, index, 'event_type:terminal_console', startDate, endDate, availableIndices);
+  const projectLifecycleData = useESWithDateFilter<ProjectLifecycleDoc>(baseUrl, index, 'event_type:project_lifecycle', startDate, endDate, availableIndices);
+
+# Update isLoading useMemo (line 530) to include new data sources
+
+  const isLoading = useMemo(() =>
+    perf.isLoading || cmds.isLoading || windows.isLoading ||
+    engagementSessions.isLoading || commandEngagement.isLoading || learningProgress.isLoading ||
+    appUsageStats.isLoading || dailyActivity.isLoading || engagementMetrics.isLoading ||
+    skillProgressAnalytics.isLoading || skillCrossComparison.isLoading || dropoutRiskAssessment.isLoading ||
+    crossServerMetrics.isLoading || crossServerComparison.isLoading ||
+    filesystemData.isLoading || errorDebugData.isLoading || devEnvironmentData.isLoading ||
+    browserActivityData.isLoading || codeQualityData.isLoading || packageDependencyData.isLoading ||
+    collaborationData.isLoading || learningPathData.isLoading || resourceAccessData.isLoading ||
+    timeDistributionData.isLoading || hardwareUtilizationData.isLoading || networkBehaviorData.isLoading ||
+    terminalConsoleData.isLoading || projectLifecycleData.isLoading,
+    [perf.isLoading, cmds.isLoading, windows.isLoading,
+     engagementSessions.isLoading, commandEngagement.isLoading, learningProgress.isLoading,
+     appUsageStats.isLoading, dailyActivity.isLoading, engagementMetrics.isLoading,
+     skillProgressAnalytics.isLoading, skillCrossComparison.isLoading, dropoutRiskAssessment.isLoading,
+     crossServerMetrics.isLoading, crossServerComparison.isLoading,
+     filesystemData.isLoading, errorDebugData.isLoading, devEnvironmentData.isLoading,
+     browserActivityData.isLoading, codeQualityData.isLoading, packageDependencyData.isLoading,
+     collaborationData.isLoading, learningPathData.isLoading, resourceAccessData.isLoading,
+     timeDistributionData.isLoading, hardwareUtilizationData.isLoading, networkBehaviorData.isLoading,
+     terminalConsoleData.isLoading, projectLifecycleData.isLoading]
+  );
+
+# Add New Tab in tabs array (line 1752)
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'engagement', label: 'Engagement Analytics', icon: '🎯' },
+    { id: 'learning', label: 'Learning & Skills', icon: '🧠' },
+    { id: 'usage', label: 'Usage Patterns', icon: '📱' },
+    { id: 'risk', label: 'Risk Assessment', icon: '⚠️' },
+    { id: 'comparison', label: 'Cross-Server Analysis', icon: '🔄' },
+    { id: 'security', label: 'Security & Risk', icon: '🔒' },
+    { id: 'analytics', label: 'Advanced Analytics', icon: '📈' },
+    { id: 'developer', label: 'Developer Insights', icon: '💻' }  // NEW TAB
+  ];
