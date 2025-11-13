@@ -226,6 +226,181 @@ interface ResourceDoc {
   };
 }
 
+// New monitoring module interfaces
+interface FileSystemDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    files_created?: number;
+    files_modified?: number;
+    files_deleted?: number;
+    total_lines?: number;
+    git_commits?: number;
+    languages?: Record<string, number>;
+    project_type?: string;
+    file_events?: any[];
+  };
+}
+
+interface ErrorDebugDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    error_count?: number;
+    error_type?: string;
+    resolution_time_minutes?: number;
+    debug_sessions?: number;
+    stack_trace?: string;
+    severity?: string;
+  };
+}
+
+interface DevEnvironmentDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    ide_name?: string;
+    usage_minutes?: number;
+    plugins?: string[];
+    configurations?: Record<string, any>;
+    extensions_count?: number;
+  };
+}
+
+interface BrowserActivityDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    site_url?: string;
+    site_category?: string;
+    is_educational?: boolean;
+    duration_minutes?: number;
+    page_title?: string;
+  };
+}
+
+interface CodeQualityDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    file_path?: string;
+    function_count?: number;
+    comment_ratio?: number;
+    test_coverage?: number;
+    complexity_score?: number;
+    quality_score?: number;
+    lines_of_code?: number;
+  };
+}
+
+interface PackageDependencyDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    package_name?: string;
+    package_version?: string;
+    install_time?: string;
+    dependency_count?: number;
+    has_conflicts?: boolean;
+    virtual_env?: string;
+  };
+}
+
+interface CollaborationDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    collaboration_type?: string;
+    participants?: number;
+    duration_minutes?: number;
+    code_files_shared?: number;
+  };
+}
+
+interface LearningPathDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    exercise_name?: string;
+    assignment_name?: string;
+    quiz_score?: number;
+    milestone?: string;
+    certificate?: string;
+    completion_percent?: number;
+  };
+}
+
+interface ResourceAccessDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    resource_type?: string;
+    resource_name?: string;
+    access_count?: number;
+    data_transferred_mb?: number;
+    response_time_ms?: number;
+  };
+}
+
+interface TimeDistributionDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    activity_type?: string;
+    duration_minutes?: number;
+    context_switches?: number;
+    focus_score?: number;
+    productivity_score?: number;
+  };
+}
+
+interface HardwareUtilizationDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    gpu_utilization?: number;
+    gpu_memory_used_mb?: number;
+    peripheral_type?: string;
+    peripheral_usage_minutes?: number;
+  };
+}
+
+interface NetworkBehaviorDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    transfer_type?: string;
+    bytes_transferred?: number;
+    repository?: string;
+    bandwidth_mbps?: number;
+    connection_count?: number;
+  };
+}
+
+interface TerminalConsoleDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    command?: string;
+    command_category?: string;
+    execution_time_ms?: number;
+    proficiency_score?: number;
+    session_duration_minutes?: number;
+  };
+}
+
+interface ProjectLifecycleDoc {
+  timestamp: string;
+  sourceIndex?: string;
+  data: {
+    project_name?: string;
+    lifecycle_stage?: string;
+    stage_duration_minutes?: number;
+    success?: boolean;
+    error_count?: number;
+  };
+}
+
 // Custom hook for Elasticsearch queries with date filtering
 function useESWithDateFilter<T>(baseUrl: string, index: string, query: string, startDate?: Date, endDate?: Date, availableIndices?: string[]) {
   const [data, setData] = useState<T[]>([]);
@@ -527,17 +702,43 @@ export default function App() {
   const crossServerMetrics = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_metrics', startDate, endDate, availableIndices);
   const crossServerComparison = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_comparison', startDate, endDate, availableIndices);
 
-  const isLoading = useMemo(() => 
-    perf.isLoading || cmds.isLoading || windows.isLoading || 
-    engagementSessions.isLoading || commandEngagement.isLoading || learningProgress.isLoading || 
-    appUsageStats.isLoading || dailyActivity.isLoading || engagementMetrics.isLoading || 
-    skillProgressAnalytics.isLoading || skillCrossComparison.isLoading || dropoutRiskAssessment.isLoading || 
-    crossServerMetrics.isLoading || crossServerComparison.isLoading,
-    [perf.isLoading, cmds.isLoading, windows.isLoading, 
-     engagementSessions.isLoading, commandEngagement.isLoading, learningProgress.isLoading, 
-     appUsageStats.isLoading, dailyActivity.isLoading, engagementMetrics.isLoading, 
-     skillProgressAnalytics.isLoading, skillCrossComparison.isLoading, dropoutRiskAssessment.isLoading, 
-     crossServerMetrics.isLoading, crossServerComparison.isLoading]
+  // New monitoring module data hooks
+  const filesystemData = useESWithDateFilter<FileSystemDoc>(baseUrl, index, 'event_type:filesystem_activity', startDate, endDate, availableIndices);
+  const errorDebugData = useESWithDateFilter<ErrorDebugDoc>(baseUrl, index, 'event_type:error_debug', startDate, endDate, availableIndices);
+  const devEnvironmentData = useESWithDateFilter<DevEnvironmentDoc>(baseUrl, index, 'event_type:dev_environment', startDate, endDate, availableIndices);
+  const browserActivityData = useESWithDateFilter<BrowserActivityDoc>(baseUrl, index, 'event_type:browser_activity', startDate, endDate, availableIndices);
+  const codeQualityData = useESWithDateFilter<CodeQualityDoc>(baseUrl, index, 'event_type:code_quality', startDate, endDate, availableIndices);
+  const packageDependencyData = useESWithDateFilter<PackageDependencyDoc>(baseUrl, index, 'event_type:package_dependency', startDate, endDate, availableIndices);
+  const collaborationData = useESWithDateFilter<CollaborationDoc>(baseUrl, index, 'event_type:collaboration', startDate, endDate, availableIndices);
+  const learningPathData = useESWithDateFilter<LearningPathDoc>(baseUrl, index, 'event_type:learning_path', startDate, endDate, availableIndices);
+  const resourceAccessData = useESWithDateFilter<ResourceAccessDoc>(baseUrl, index, 'event_type:resource_access', startDate, endDate, availableIndices);
+  const timeDistributionData = useESWithDateFilter<TimeDistributionDoc>(baseUrl, index, 'event_type:time_distribution', startDate, endDate, availableIndices);
+  const hardwareUtilizationData = useESWithDateFilter<HardwareUtilizationDoc>(baseUrl, index, 'event_type:hardware_utilization', startDate, endDate, availableIndices);
+  const networkBehaviorData = useESWithDateFilter<NetworkBehaviorDoc>(baseUrl, index, 'event_type:network_behavior', startDate, endDate, availableIndices);
+  const terminalConsoleData = useESWithDateFilter<TerminalConsoleDoc>(baseUrl, index, 'event_type:terminal_console', startDate, endDate, availableIndices);
+  const projectLifecycleData = useESWithDateFilter<ProjectLifecycleDoc>(baseUrl, index, 'event_type:project_lifecycle', startDate, endDate, availableIndices);
+
+  const isLoading = useMemo(() =>
+    perf.isLoading || cmds.isLoading || windows.isLoading ||
+    engagementSessions.isLoading || commandEngagement.isLoading || learningProgress.isLoading ||
+    appUsageStats.isLoading || dailyActivity.isLoading || engagementMetrics.isLoading ||
+    skillProgressAnalytics.isLoading || skillCrossComparison.isLoading || dropoutRiskAssessment.isLoading ||
+    crossServerMetrics.isLoading || crossServerComparison.isLoading ||
+    filesystemData.isLoading || errorDebugData.isLoading || devEnvironmentData.isLoading ||
+    browserActivityData.isLoading || codeQualityData.isLoading || packageDependencyData.isLoading ||
+    collaborationData.isLoading || learningPathData.isLoading || resourceAccessData.isLoading ||
+    timeDistributionData.isLoading || hardwareUtilizationData.isLoading || networkBehaviorData.isLoading ||
+    terminalConsoleData.isLoading || projectLifecycleData.isLoading,
+    [perf.isLoading, cmds.isLoading, windows.isLoading,
+     engagementSessions.isLoading, commandEngagement.isLoading, learningProgress.isLoading,
+     appUsageStats.isLoading, dailyActivity.isLoading, engagementMetrics.isLoading,
+     skillProgressAnalytics.isLoading, skillCrossComparison.isLoading, dropoutRiskAssessment.isLoading,
+     crossServerMetrics.isLoading, crossServerComparison.isLoading,
+     filesystemData.isLoading, errorDebugData.isLoading, devEnvironmentData.isLoading,
+     browserActivityData.isLoading, codeQualityData.isLoading, packageDependencyData.isLoading,
+     collaborationData.isLoading, learningPathData.isLoading, resourceAccessData.isLoading,
+     timeDistributionData.isLoading, hardwareUtilizationData.isLoading, networkBehaviorData.isLoading,
+     terminalConsoleData.isLoading, projectLifecycleData.isLoading]
   );
 
   // Time filter handler with debouncing
@@ -1757,7 +1958,8 @@ export default function App() {
     { id: 'risk', label: 'Risk Assessment', icon: '⚠️' },
     { id: 'comparison', label: 'Cross-Server Analysis', icon: '🔄' },
     { id: 'security', label: 'Security & Risk', icon: '🔒' },
-    { id: 'analytics', label: 'Advanced Analytics', icon: '📈' }
+    { id: 'analytics', label: 'Advanced Analytics', icon: '📈' },
+    { id: 'developer', label: 'Developer Insights', icon: '💻' }
   ];
 
   // Processed data for different tabs
@@ -4810,7 +5012,731 @@ export default function App() {
       </ResponsiveContainer>
         </div>
       );
-      
+
+      case 'developer': return (
+        <div>
+          <h2 style={{ marginBottom: 24, color: '#333' }}>💻 Developer Insights</h2>
+          <p style={{ color: '#666', marginBottom: 32 }}>Comprehensive monitoring of development activities, code quality, and environment usage</p>
+
+          {/* FileSystem Monitor */}
+          <h3>📁 File System Activity</h3>
+          {filesystemData.data.length === 0 ? (
+            <NoDataMessage message="No filesystem activity data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={filesystemData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  created: d.data?.files_created || 0,
+                  modified: d.data?.files_modified || 0,
+                  deleted: d.data?.files_deleted || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="created" stroke="#82ca9d" strokeWidth={2} name="Files Created" dot={false} />
+                  <Line type="monotone" dataKey="modified" stroke="#8884d8" strokeWidth={2} name="Files Modified" dot={false} />
+                  <Line type="monotone" dataKey="deleted" stroke="#ff6b6b" strokeWidth={2} name="Files Deleted" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const langs: Record<string, number> = {};
+                      filesystemData.data.forEach(d => {
+                        const languages = d.data?.languages || {};
+                        Object.entries(languages).forEach(([lang, count]) => {
+                          langs[lang] = (langs[lang] || 0) + (count as number);
+                        });
+                      });
+                      return Object.entries(langs).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(filesystemData.data.reduce((acc: any, d) => {
+                      const languages = d.data?.languages || {};
+                      return { ...acc, ...languages };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Error/Debug Monitor */}
+          <h3 style={{ marginTop: 40 }}>🐛 Error & Debug Tracking</h3>
+          {errorDebugData.data.length === 0 ? (
+            <NoDataMessage message="No error/debug data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={errorDebugData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  errors: d.data?.error_count || 0,
+                  debugSessions: d.data?.debug_sessions || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="errors" stroke="#ff6b6b" strokeWidth={2} name="Error Count" dot={false} />
+                  <Line type="monotone" dataKey="debugSessions" stroke="#ffc658" strokeWidth={2} name="Debug Sessions" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={errorDebugData.data.slice(-20).map(d => ({
+                  type: d.data?.error_type || 'Unknown',
+                  resolution: d.data?.resolution_time_minutes || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="resolution" fill="#ff6b6b" name="Resolution Time (min)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Dev Environment Monitor */}
+          <h3 style={{ marginTop: 40 }}>🛠️ Development Environment</h3>
+          {devEnvironmentData.data.length === 0 ? (
+            <NoDataMessage message="No development environment data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const ides: Record<string, number> = {};
+                      devEnvironmentData.data.forEach(d => {
+                        const ide = d.data?.ide_name || 'Unknown';
+                        const usage = d.data?.usage_minutes || 0;
+                        ides[ide] = (ides[ide] || 0) + usage;
+                      });
+                      return Object.entries(ides).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(devEnvironmentData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.ide_name || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={devEnvironmentData.data.slice(-15).map(d => ({
+                  ide: d.data?.ide_name || 'Unknown',
+                  usage: d.data?.usage_minutes || 0,
+                  plugins: d.data?.plugins?.length || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="ide" angle={-45} textAnchor="end" height={80} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="usage" fill="#8884d8" name="Usage (min)" />
+                  <Bar yAxisId="right" dataKey="plugins" fill="#82ca9d" name="Plugin Count" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Browser Activity Monitor */}
+          <h3 style={{ marginTop: 40 }}>🌐 Browser Activity</h3>
+          {browserActivityData.data.length === 0 ? (
+            <NoDataMessage message="No browser activity data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      let educational = 0, nonEducational = 0;
+                      browserActivityData.data.forEach(d => {
+                        const duration = d.data?.duration_minutes || 0;
+                        if (d.data?.is_educational) educational += duration;
+                        else nonEducational += duration;
+                      });
+                      return [
+                        { name: 'Educational', value: educational },
+                        { name: 'Non-Educational', value: nonEducational }
+                      ];
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    <Cell fill="#82ca9d" />
+                    <Cell fill="#ff6b6b" />
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={(() => {
+                  const categories: Record<string, number> = {};
+                  browserActivityData.data.forEach(d => {
+                    const cat = d.data?.site_category || 'Unknown';
+                    const dur = d.data?.duration_minutes || 0;
+                    categories[cat] = (categories[cat] || 0) + dur;
+                  });
+                  return Object.entries(categories).slice(0, 15).map(([name, value]) => ({ name, value }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#8884d8" name="Duration (min)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Code Quality Monitor */}
+          <h3 style={{ marginTop: 40 }}>✅ Code Quality Metrics</h3>
+          {codeQualityData.data.length === 0 ? (
+            <NoDataMessage message="No code quality data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={codeQualityData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  quality: d.data?.quality_score || 0,
+                  coverage: d.data?.test_coverage || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="quality" stroke="#82ca9d" strokeWidth={2} name="Quality Score" dot={false} />
+                  <Line type="monotone" dataKey="coverage" stroke="#8884d8" strokeWidth={2} name="Test Coverage %" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={codeQualityData.data.slice(-15).map(d => ({
+                  file: (d.data?.file_path || 'Unknown').split('/').pop() || 'Unknown',
+                  functions: d.data?.function_count || 0,
+                  complexity: d.data?.complexity_score || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="file" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="functions" fill="#8884d8" name="Function Count" />
+                  <Bar dataKey="complexity" fill="#ffc658" name="Complexity Score" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Package Dependency Monitor */}
+          <h3 style={{ marginTop: 40 }}>📦 Package Dependencies</h3>
+          {packageDependencyData.data.length === 0 ? (
+            <NoDataMessage message="No package dependency data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={packageDependencyData.data.slice(-20).map(d => ({
+                  package: d.data?.package_name || 'Unknown',
+                  deps: d.data?.dependency_count || 0,
+                  time: new Date(d.data?.install_time || d.timestamp).toLocaleTimeString()
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="package" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="deps" fill="#8884d8" name="Dependency Count" />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      let conflicts = 0, noConflicts = 0;
+                      packageDependencyData.data.forEach(d => {
+                        if (d.data?.has_conflicts) conflicts++;
+                        else noConflicts++;
+                      });
+                      return [
+                        { name: 'With Conflicts', value: conflicts },
+                        { name: 'No Conflicts', value: noConflicts }
+                      ];
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    <Cell fill="#ff6b6b" />
+                    <Cell fill="#82ca9d" />
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Collaboration Monitor */}
+          <h3 style={{ marginTop: 40 }}>🤝 Collaboration Activities</h3>
+          {collaborationData.data.length === 0 ? (
+            <NoDataMessage message="No collaboration data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const types: Record<string, number> = {};
+                      collaborationData.data.forEach(d => {
+                        const type = d.data?.collaboration_type || 'Unknown';
+                        types[type] = (types[type] || 0) + 1;
+                      });
+                      return Object.entries(types).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(collaborationData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.collaboration_type || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={collaborationData.data.slice(-15).map(d => ({
+                  type: d.data?.collaboration_type || 'Unknown',
+                  participants: d.data?.participants || 0,
+                  duration: d.data?.duration_minutes || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" angle={-45} textAnchor="end" height={80} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="participants" fill="#8884d8" name="Participants" />
+                  <Bar yAxisId="right" dataKey="duration" fill="#82ca9d" name="Duration (min)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Learning Path Monitor */}
+          <h3 style={{ marginTop: 40 }}>🎓 Learning Path Progress</h3>
+          {learningPathData.data.length === 0 ? (
+            <NoDataMessage message="No learning path data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={learningPathData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  completion: d.data?.completion_percent || 0,
+                  quizScore: d.data?.quiz_score || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="completion" stroke="#82ca9d" strokeWidth={2} name="Completion %" dot={false} />
+                  <Line type="monotone" dataKey="quizScore" stroke="#8884d8" strokeWidth={2} name="Quiz Score" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={learningPathData.data.slice(-15).map(d => ({
+                  item: d.data?.exercise_name || d.data?.assignment_name || d.data?.milestone || 'Unknown',
+                  score: d.data?.quiz_score || d.data?.completion_percent || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="item" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="score" fill="#82ca9d" name="Score/Progress" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Resource Access Monitor */}
+          <h3 style={{ marginTop: 40 }}>🔌 Resource Access</h3>
+          {resourceAccessData.data.length === 0 ? (
+            <NoDataMessage message="No resource access data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const types: Record<string, number> = {};
+                      resourceAccessData.data.forEach(d => {
+                        const type = d.data?.resource_type || 'Unknown';
+                        const count = d.data?.access_count || 1;
+                        types[type] = (types[type] || 0) + count;
+                      });
+                      return Object.entries(types).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(resourceAccessData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.resource_type || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={resourceAccessData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  transferred: d.data?.data_transferred_mb || 0,
+                  responseTime: d.data?.response_time_ms || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="transferred" stroke="#8884d8" strokeWidth={2} name="Data Transferred (MB)" dot={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="responseTime" stroke="#ffc658" strokeWidth={2} name="Response Time (ms)" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Time Distribution Analyzer */}
+          <h3 style={{ marginTop: 40 }}>⏰ Time Distribution</h3>
+          {timeDistributionData.data.length === 0 ? (
+            <NoDataMessage message="No time distribution data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const activities: Record<string, number> = {};
+                      timeDistributionData.data.forEach(d => {
+                        const activity = d.data?.activity_type || 'Unknown';
+                        const duration = d.data?.duration_minutes || 0;
+                        activities[activity] = (activities[activity] || 0) + duration;
+                      });
+                      return Object.entries(activities).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(timeDistributionData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.activity_type || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={timeDistributionData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  contextSwitches: d.data?.context_switches || 0,
+                  focusScore: d.data?.focus_score || 0,
+                  productivity: d.data?.productivity_score || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="contextSwitches" stroke="#ff6b6b" strokeWidth={2} name="Context Switches" dot={false} />
+                  <Line type="monotone" dataKey="focusScore" stroke="#82ca9d" strokeWidth={2} name="Focus Score" dot={false} />
+                  <Line type="monotone" dataKey="productivity" stroke="#8884d8" strokeWidth={2} name="Productivity" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Hardware Utilization Monitor */}
+          <h3 style={{ marginTop: 40 }}>🖥️ Hardware Utilization</h3>
+          {hardwareUtilizationData.data.length === 0 ? (
+            <NoDataMessage message="No hardware utilization data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={hardwareUtilizationData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  gpu: d.data?.gpu_utilization || 0,
+                  gpuMemory: d.data?.gpu_memory_used_mb || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="gpu" stroke="#8884d8" strokeWidth={2} name="GPU Utilization %" dot={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="gpuMemory" stroke="#82ca9d" strokeWidth={2} name="GPU Memory (MB)" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={(() => {
+                  const peripherals: Record<string, number> = {};
+                  hardwareUtilizationData.data.forEach(d => {
+                    const type = d.data?.peripheral_type || 'Unknown';
+                    const usage = d.data?.peripheral_usage_minutes || 0;
+                    peripherals[type] = (peripherals[type] || 0) + usage;
+                  });
+                  return Object.entries(peripherals).map(([name, value]) => ({ name, value }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#8884d8" name="Usage (min)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Network Behavior Monitor */}
+          <h3 style={{ marginTop: 40 }}>🌐 Network Behavior</h3>
+          {networkBehaviorData.data.length === 0 ? (
+            <NoDataMessage message="No network behavior data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={networkBehaviorData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  transferred: (d.data?.bytes_transferred || 0) / (1024 * 1024),
+                  bandwidth: d.data?.bandwidth_mbps || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="transferred" stroke="#8884d8" strokeWidth={2} name="Data Transferred (MB)" dot={false} />
+                  <Line type="monotone" dataKey="bandwidth" stroke="#82ca9d" strokeWidth={2} name="Bandwidth (Mbps)" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={(() => {
+                  const repos: Record<string, number> = {};
+                  networkBehaviorData.data.forEach(d => {
+                    const repo = d.data?.repository || 'Unknown';
+                    repos[repo] = (repos[repo] || 0) + 1;
+                  });
+                  return Object.entries(repos).slice(0, 15).map(([name, value]) => ({ name, value }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#8884d8" name="Access Count" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Terminal/Console Analyzer */}
+          <h3 style={{ marginTop: 40 }}>💬 Terminal & Console Activity</h3>
+          {terminalConsoleData.data.length === 0 ? (
+            <NoDataMessage message="No terminal/console data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const categories: Record<string, number> = {};
+                      terminalConsoleData.data.forEach(d => {
+                        const cat = d.data?.command_category || 'Unknown';
+                        categories[cat] = (categories[cat] || 0) + 1;
+                      });
+                      return Object.entries(categories).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(terminalConsoleData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.command_category || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <LineChart data={terminalConsoleData.data.map(d => ({
+                  time: new Date(d.timestamp).toLocaleString(),
+                  proficiency: d.data?.proficiency_score || 0,
+                  executionTime: d.data?.execution_time_ms || 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="proficiency" stroke="#82ca9d" strokeWidth={2} name="Proficiency Score" dot={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="executionTime" stroke="#ffc658" strokeWidth={2} name="Execution Time (ms)" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          {/* Project Lifecycle Monitor */}
+          <h3 style={{ marginTop: 40 }}>🚀 Project Lifecycle</h3>
+          {projectLifecycleData.data.length === 0 ? (
+            <NoDataMessage message="No project lifecycle data available" />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={330}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const stages: Record<string, number> = {};
+                      projectLifecycleData.data.forEach(d => {
+                        const stage = d.data?.lifecycle_stage || 'Unknown';
+                        stages[stage] = (stages[stage] || 0) + 1;
+                      });
+                      return Object.entries(stages).map(([name, value]) => ({ name, value }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                  >
+                    {Object.keys(projectLifecycleData.data.reduce((acc: any, d) => {
+                      return { ...acc, [d.data?.lifecycle_stage || 'Unknown']: 1 };
+                    }, {})).map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={getIndexColor(idx.toString(), idx)} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <ResponsiveContainer width="100%" height={330}>
+                <BarChart data={projectLifecycleData.data.slice(-15).map(d => ({
+                  project: d.data?.project_name || 'Unknown',
+                  duration: d.data?.stage_duration_minutes || 0,
+                  errors: d.data?.error_count || 0,
+                  success: d.data?.success ? 1 : 0
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="project" angle={-45} textAnchor="end" height={80} />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="duration" fill="#8884d8" name="Duration (min)" />
+                  <Bar dataKey="errors" fill="#ff6b6b" name="Error Count" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+
+          <div style={{ marginTop: 40, padding: 16, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
+            <h4>Developer Insights Summary</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              <div>📁 Filesystem Events: {filesystemData.data.length}</div>
+              <div>🐛 Error Records: {errorDebugData.data.length}</div>
+              <div>🛠️ IDE Sessions: {devEnvironmentData.data.length}</div>
+              <div>🌐 Browser Activities: {browserActivityData.data.length}</div>
+              <div>✅ Code Quality Checks: {codeQualityData.data.length}</div>
+              <div>📦 Package Operations: {packageDependencyData.data.length}</div>
+              <div>🤝 Collaborations: {collaborationData.data.length}</div>
+              <div>🎓 Learning Activities: {learningPathData.data.length}</div>
+              <div>🔌 Resource Accesses: {resourceAccessData.data.length}</div>
+              <div>⏰ Time Entries: {timeDistributionData.data.length}</div>
+              <div>🖥️ Hardware Records: {hardwareUtilizationData.data.length}</div>
+              <div>🌐 Network Events: {networkBehaviorData.data.length}</div>
+              <div>💬 Terminal Commands: {terminalConsoleData.data.length}</div>
+              <div>🚀 Project Stages: {projectLifecycleData.data.length}</div>
+            </div>
+          </div>
+        </div>
+      );
+
       default: return (
         <div>
           <h3>Overview</h3>
