@@ -1,0 +1,274 @@
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4 {
+  color: #f0f0f0;
+}
+
+.dark-mode select,
+.dark-mode input[type="datetime-local"] {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+.dark-mode button {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+.dark-mode button:hover {
+  background-color: #3d3d3d;
+}
+
+.dark-mode button.active,
+.dark-mode button[style*="background: #007bff"],
+.dark-mode button[style*="backgroundColor: '#007bff'"] {
+  background-color: #0056b3 !important;
+  color: white !important;
+}
+
+.dark-mode .pdf-button {
+  background-color: #388E3C !important;
+}
+
+.dark-mode .recharts-cartesian-grid-horizontal line,
+.dark-mode .recharts-cartesian-grid-vertical line {
+  stroke: #444;
+}
+
+.dark-mode .recharts-text {
+  fill: #e0e0e0;
+}
+
+.dark-mode .recharts-tooltip-wrapper {
+  background-color: #2d2d2d !important;
+  border: 1px solid #444 !important;
+}
+
+.dark-mode .recharts-default-tooltip {
+  background-color: #2d2d2d !important;
+  border: 1px solid #444 !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-mode .recharts-legend-item-text {
+  color: #e0e0e0 !important;
+}
+
+.dark-mode div[style*="backgroundColor: '#f9f9f9'"],
+.dark-mode div[style*="background: '#f9f9f9'"] {
+  background-color: #2d2d2d !important;
+}
+
+.dark-mode div[style*="backgroundColor: '#e3f2fd'"],
+.dark-mode div[style*="background: '#e3f2fd'"] {
+  background-color: #1e3a5f !important;
+}
+
+.dark-mode div[style*="borderBottom: '1px solid #ddd'"] {
+  border-bottom-color: #444 !important;
+}
+
+/* Loading overlay in dark mode */
+.dark-mode > div[style*="rgba(255, 255, 255, 0.95)"] {
+  background-color: rgba(26, 26, 26, 0.95) !important;
+  color: #e0e0e0 !important;
+}
+
+/* Metric cards in dark mode (for future enhancement) */
+.dark-mode .metric-card {
+  background-color: #2d2d2d;
+  border-color: #444;
+}
+
+/* Tab styling in dark mode */
+.dark-mode button[style*="background: #f5f5f5"] {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+}
+
+.dark-mode button[style*="background: #8884d8"] {
+  background-color: #6b6fc8 !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  /* Main dashboard container */
+  body {
+    padding: 8px !important;
+  }
+
+  /* Header adjustments */
+  div[style*="display: flex"][style*="justifyContent: 'space-between'"] {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Make controls stack vertically on mobile */
+  div[style*="display: flex"][style*="gap: 12"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Time preset buttons - smaller on mobile */
+  button[style*="padding: '8px 16px'"] {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Select dropdowns - full width on mobile */
+  select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Date inputs - full width on mobile */
+  input[type="datetime-local"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 14px !important;
+  }
+
+  /* Tab buttons - stack and full width on mobile */
+  div[style*="borderBottom: '1px solid #ddd'"] button {
+    flex: 1 !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Chart containers - ensure proper width on mobile */
+  .recharts-responsive-container {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Headings - smaller on mobile */
+  h2 {
+    font-size: 1.5em !important;
+  }
+
+  h3 {
+    font-size: 1.2em !important;
+  }
+
+  h4 {
+    font-size: 1em !important;
+  }
+
+  /* Grid layouts - single column on mobile */
+  div[style*="display: 'grid'"],
+  div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Custom date filter - stack vertically */
+  div[style*="backgroundColor: '#f9f9f9'"] {
+    flex-direction: column !important;
+  }
+
+  /* Comparison mode - stack vertically */
+  div[style*="backgroundColor: '#e3f2fd'"] > div {
+    flex-direction: column !important;
+  }
+
+  /* Export buttons - full width on very small screens */
+  @media (max-width: 480px) {
+    button {
+      width: 100% !important;
+    }
+  }
+
+  /* Reduce chart heights on mobile for better scrolling */
+  .recharts-responsive-container {
+    height: 250px !important;
+  }
+
+  /* Tab navigation - allow scrolling on mobile */
+  div[style*="borderBottom: '1px solid #ddd'"] {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Ensure proper touch targets (minimum 44px) */
+  button,
+  select,
+  input {
+    min-height: 44px !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Reduce chart heights slightly on tablets */
+  .recharts-responsive-container {
+    height: 280px !important;
+  }
+
+  /* 2-column grid on tablets */
+  div[style*="gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))'"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  h2 {
+    font-size: 1.8em !important;
+  }
+}
+
+/* Landscape mobile adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .recharts-responsive-container {
+    height: 220px !important;
+  }
+}
+
+/* Loading skeleton styles */
+.skeleton {
+  animation: skeleton-loading 1s linear infinite alternate;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+}
+
+.dark-mode .skeleton {
+  background: linear-gradient(90deg, #2d2d2d 25%, #3d3d3d 50%, #2d2d2d 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-chart {
+  height: 330px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.skeleton-text {
+  height: 20px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-title {
+  height: 30px;
+  width: 60%;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}

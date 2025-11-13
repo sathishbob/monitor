@@ -1,6 +1,7 @@
 // Version: 2025-01-15-v3 - Fixed chart line hiding with conditional rendering
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { LineChart, BarChart, PieChart, AreaChart, ComposedChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Cell, Line, Bar, Area, Pie } from 'recharts';
+import './App.css';
 
 // Types
 interface ESHit<T> {
@@ -586,6 +587,23 @@ export default function App() {
   const [loadingIndices, setLoadingIndices] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('overview');
 
+  // Auto-refresh state
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(0); // 0 = off
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  // Dark mode state (load from localStorage)
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Comparison mode state
+  const [comparisonMode, setComparisonMode] = useState<boolean>(false);
+  const [comparisonDateRange, setComparisonDateRange] = useState<{start: string, end: string}>({
+    start: '',
+    end: ''
+  });
+
   // Function to fetch available indices matching lab_mon* pattern
   const fetchAvailableIndices = async () => {
     setLoadingIndices(true);
@@ -642,6 +660,53 @@ export default function App() {
   // Fetch available indices on component mount
   useEffect(() => {
     fetchAvailableIndices();
+  }, []);
+
+  // Auto-refresh mechanism
+  useEffect(() => {
+    if (autoRefreshInterval === 0) return; // No refresh if disabled
+
+    const intervalId = setInterval(() => {
+      setRefreshKey(prev => prev + 1); // Trigger re-fetch by changing key
+    }, autoRefreshInterval);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefreshInterval]);
+
+  // Dark mode persistence
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    // Apply dark mode class to body
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
+
+  // Save user preferences to localStorage
+  useEffect(() => {
+    const preferences = {
+      autoRefreshInterval,
+      darkMode,
+      selectedTimePreset,
+      activeTab
+    };
+    localStorage.setItem('userPreferences', JSON.stringify(preferences));
+  }, [autoRefreshInterval, darkMode, activeTab]);
+
+  // Load user preferences on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('userPreferences');
+    if (saved) {
+      try {
+        const prefs = JSON.parse(saved);
+        if (prefs.autoRefreshInterval !== undefined) setAutoRefreshInterval(prefs.autoRefreshInterval);
+        if (prefs.activeTab) setActiveTab(prefs.activeTab);
+      } catch (e) {
+        console.error('Failed to load user preferences:', e);
+      }
+    }
   }, []);
 
   // Custom date filter handler
@@ -869,13 +934,146 @@ export default function App() {
     }
   };
 
+  // Export current tab charts as individual PNG files
+  const exportChartsAsPNG = async () => {
+    if (!dashboardRef.current) return;
+
+    setIsGeneratingPDF(true); // Reuse the same loading state
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+
+      // Find all ResponsiveContainer divs (chart containers) in the current tab
+      const tabContent = dashboardRef.current.querySelector('[data-tab-content]');
+      if (!tabContent) {
+        console.error('Tab content not found');
+        return;
+      }
+
+      // Get all chart containers - they're the ResponsiveContainer divs
+      const chartContainers = tabContent.querySelectorAll('.recharts-responsive-container');
+
+      if (chartContainers.length === 0) {
+        alert('No charts found in the current tab');
+        return;
+      }
+
+      // Export each chart
+      for (let i = 0; i < chartContainers.length; i++) {
+        const container = chartContainers[i] as HTMLElement;
+
+        // Find the parent heading to use as filename
+        let chartTitle = `chart-${i + 1}`;
+        let parent = container.parentElement;
+        while (parent && parent !== tabContent) {
+          const heading = parent.querySelector('h3, h4');
+          if (heading) {
+            chartTitle = heading.textContent?.trim().replace(/[^a-zA-Z0-9-]/g, '_') || chartTitle;
+            break;
+          }
+          parent = parent.parentElement;
+        }
+
+        try {
+          const canvas = await html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: darkMode ? '#1a1a1a' : '#ffffff',
+            logging: false
+          });
+
+          // Convert to blob and download
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${activeTab}-${chartTitle}.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }
+          }, 'image/png');
+
+          // Small delay between downloads to avoid browser blocking
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(`Error exporting chart ${i + 1}:`, error);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error exporting charts:', error);
+      alert('Error exporting charts. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  // Loading Skeleton component
+  const LoadingSkeleton = () => (
+    <div style={{ padding: 16 }}>
+      <div className="skeleton skeleton-title"></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+        <div className="skeleton skeleton-chart"></div>
+        <div className="skeleton skeleton-chart"></div>
+        <div className="skeleton skeleton-chart"></div>
+        <div className="skeleton skeleton-chart"></div>
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <div className="skeleton skeleton-text" style={{ width: '40%' }}></div>
+        <div className="skeleton skeleton-text" style={{ width: '60%' }}></div>
+        <div className="skeleton skeleton-text" style={{ width: '50%' }}></div>
+      </div>
+    </div>
+  );
+
   // No Data component
   const NoDataMessage = ({ message = "No data available for the selected time range" }: { message?: string }) => (
-    <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-      <div className="text-center">
-        <div className="text-gray-400 text-6xl mb-4">📊</div>
-        <p className="text-gray-500 text-lg">{message}</p>
-        <p className="text-gray-400 text-sm mt-2">Try selecting a different time range</p>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '400px',
+      backgroundColor: darkMode ? '#2d2d2d' : '#f9f9f9',
+      borderRadius: 8,
+      border: `2px dashed ${darkMode ? '#444' : '#ddd'}`,
+      padding: 32
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '4em', marginBottom: 16 }}>📊</div>
+        <p style={{
+          color: darkMode ? '#bbb' : '#666',
+          fontSize: '1.2em',
+          marginBottom: 8,
+          fontWeight: 600
+        }}>
+          {message}
+        </p>
+        <p style={{
+          color: darkMode ? '#888' : '#999',
+          fontSize: '0.9em',
+          marginBottom: 16
+        }}>
+          Try selecting a different time range or index
+        </p>
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          justifyContent: 'center',
+          marginTop: 20
+        }}>
+          <div style={{
+            padding: '8px 16px',
+            backgroundColor: darkMode ? '#3d3d3d' : '#e3f2fd',
+            borderRadius: 4,
+            fontSize: '0.85em',
+            color: darkMode ? '#bbb' : '#1976d2'
+          }}>
+            💡 Tip: Check if data is being collected
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -5747,30 +5945,41 @@ export default function App() {
   };
 
   return (
-    <div ref={dashboardRef} style={{ fontFamily: 'sans-serif', padding: 16 }}>
+    <div ref={dashboardRef} style={{ fontFamily: 'sans-serif', padding: 16 }} className={darkMode ? 'dark-mode' : ''}>
       {/* Loading Overlay */}
-      {(isLoading || isGeneratingPDF) && (
+      {isGeneratingPDF && (
         <div
           style={{
-            position: 'absolute',
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: darkMode ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
             fontSize: '18px',
             fontWeight: 'bold',
-            color: '#333',
+            color: darkMode ? '#e0e0e0' : '#333',
           }}
         >
-          {isGeneratingPDF ? 'Generating PDF...' : 'Loading...'}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '3em', marginBottom: 16 }}>⏳</div>
+            <div>Generating PDF...</div>
+            <div style={{ fontSize: '14px', marginTop: 8, opacity: 0.7 }}>
+              Please wait while we prepare your download
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Loading Skeleton - shown while data is loading */}
+      {isLoading && !isGeneratingPDF && <LoadingSkeleton />}
+
+      {/* Main Content - hidden when loading */}
+      <div style={{ display: isLoading && !isGeneratingPDF ? 'none' : 'block' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
       <h2>Enhanced Monitor Dashboard</h2>
@@ -6036,8 +6245,187 @@ export default function App() {
           >
             📄 Download PDF
           </button>
+
+          <button
+            onClick={exportChartsAsPNG}
+            disabled={isGeneratingPDF}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: isGeneratingPDF ? 'not-allowed' : 'pointer',
+              opacity: isGeneratingPDF ? 0.6 : 1,
+            }}
+            title="Export all charts in current tab as PNG files"
+          >
+            🖼️ Export Charts
+          </button>
+
+          {/* Auto-Refresh Control */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
+              Auto-Refresh
+            </label>
+            <select
+              value={autoRefreshInterval}
+              onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 4,
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value={0}>Off</option>
+              <option value={5000}>5 seconds</option>
+              <option value={15000}>15 seconds</option>
+              <option value={30000}>30 seconds</option>
+              <option value={60000}>1 minute</option>
+              <option value={300000}>5 minutes</option>
+            </select>
+          </div>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: darkMode ? '#333' : '#f5f5f5',
+              color: darkMode ? 'white' : '#333',
+              border: '1px solid #ddd',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease'
+            }}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
+
+          {/* Comparison Mode Toggle */}
+          <button
+            onClick={() => setComparisonMode(!comparisonMode)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: comparisonMode ? '#2196f3' : '#f5f5f5',
+              color: comparisonMode ? 'white' : '#333',
+              border: comparisonMode ? '1px solid #2196f3' : '1px solid #ddd',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: comparisonMode ? 'bold' : 'normal',
+            }}
+            title="Compare two time periods"
+          >
+            📊 Compare
+          </button>
         </div>
       </div>
+
+      {/* Comparison Mode Date Selectors */}
+      {comparisonMode && (
+        <div style={{
+          marginTop: 16,
+          marginBottom: 16,
+          padding: 16,
+          backgroundColor: '#e3f2fd',
+          borderRadius: 8,
+          border: '1px solid #2196f3',
+        }}>
+          <h4 style={{ marginTop: 0, marginBottom: 12, color: '#1976d2' }}>
+            📊 Comparison Period
+          </h4>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
+                Comparison Start
+              </label>
+              <input
+                type="datetime-local"
+                value={comparisonDateRange.start}
+                onChange={(e) => setComparisonDateRange({ ...comparisonDateRange, start: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 4,
+                  border: '1px solid #2196f3',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
+                Comparison End
+              </label>
+              <input
+                type="datetime-local"
+                value={comparisonDateRange.end}
+                onChange={(e) => setComparisonDateRange({ ...comparisonDateRange, end: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 4,
+                  border: '1px solid #2196f3',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
+                Quick Set
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+                    setComparisonDateRange({
+                      start: formatDateForInput(twoWeeksAgo),
+                      end: formatDateForInput(oneWeekAgo)
+                    });
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #2196f3',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Previous Week
+                </button>
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                    setComparisonDateRange({
+                      start: formatDateForInput(twoMonthsAgo),
+                      end: formatDateForInput(oneMonthAgo)
+                    });
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #2196f3',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Previous Month
+                </button>
+              </div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#1976d2', fontStyle: 'italic', marginTop: 'auto' }}>
+              ℹ️ Current period vs comparison period will be shown side-by-side
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 24, borderBottom: '1px solid #ddd' }}>
@@ -6079,6 +6467,7 @@ export default function App() {
           <div>🔄 Cross-Server: {crossServerMetrics.data.length} comparisons</div>
         </div>
       </div>
+      </div> {/* End Main Content wrapper */}
     </div>
   );
 }
