@@ -9,6 +9,24 @@ interface ESHit<T> {
   _id: string;
 }
 
+interface AlertRule {
+  id: string;
+  name: string;
+  metric: string;
+  condition: 'above' | 'below';
+  threshold: number;
+  enabled: boolean;
+  tab: string;
+}
+
+interface AlertTrigger {
+  ruleId: string;
+  ruleName: string;
+  value: number;
+  threshold: number;
+  timestamp: Date;
+}
+
 interface ESResponse<T> {
   hits: {
     hits: ESHit<T>[];
@@ -604,6 +622,44 @@ export default function App() {
     end: ''
   });
 
+  // View mode state (chart vs table)
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+
+  // Show statistics toggle
+  const [showStats, setShowStats] = useState<boolean>(false);
+
+  // Alert system state
+  const [alertRules, setAlertRules] = useState<AlertRule[]>(() => {
+    const saved = localStorage.getItem('alertRules');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: '1',
+        name: 'High CPU Usage',
+        metric: 'cpu',
+        condition: 'above',
+        threshold: 80,
+        enabled: true,
+        tab: 'overview'
+      },
+      {
+        id: '2',
+        name: 'Low Memory',
+        metric: 'memory',
+        condition: 'below',
+        threshold: 20,
+        enabled: true,
+        tab: 'overview'
+      }
+    ];
+  });
+  const [activeAlerts, setActiveAlerts] = useState<AlertTrigger[]>([]);
+  const [showAlertPanel, setShowAlertPanel] = useState<boolean>(false);
+
+  // Save alert rules to localStorage
+  useEffect(() => {
+    localStorage.setItem('alertRules', JSON.stringify(alertRules));
+  }, [alertRules]);
+
   // Function to fetch available indices matching lab_mon* pattern
   const fetchAvailableIndices = async () => {
     setLoadingIndices(true);
@@ -734,54 +790,54 @@ export default function App() {
     return date;
   }, [dateRange.end]);
 
-  // Data fetching with new comprehensive data sources
-  const perf = useESWithDateFilter<PerfDoc>(baseUrl, index, 'event_type:performance_metrics', startDate, endDate, availableIndices);
+  // Data fetching with new comprehensive data sources (using debounced dates)
+  const perf = useESWithDateFilter<PerfDoc>(baseUrl, index, 'event_type:performance_metrics', debouncedStartDate, debouncedEndDate, availableIndices);
   const cmds = useESWithDateFilter<CommandDoc>(
     baseUrl,
     index,
     'event_type:monitoring_summary',
-    startDate,
-    endDate,
+    debouncedStartDate,
+    debouncedEndDate,
     availableIndices
   );
-  const windows = useESWithDateFilter<WindowUsageDoc>(baseUrl, index, 'event_type:user_activity', startDate, endDate, availableIndices);
-  
+  const windows = useESWithDateFilter<WindowUsageDoc>(baseUrl, index, 'event_type:user_activity', debouncedStartDate, debouncedEndDate, availableIndices);
+
   // New engagement data sources
-  const engagementSessions = useESWithDateFilter<EngagementSessionDoc>(baseUrl, index, 'event_type:engagement_session', startDate, endDate, availableIndices);
+  const engagementSessions = useESWithDateFilter<EngagementSessionDoc>(baseUrl, index, 'event_type:engagement_session', debouncedStartDate, debouncedEndDate, availableIndices);
   // Pull command activity from both direct command events and monitoring summaries
   const commandEngagement = useESWithDateFilter<CommandDoc>(
     baseUrl,
     index,
     'event_type:monitoring_summary',
-    startDate,
-    endDate,
+    debouncedStartDate,
+    debouncedEndDate,
     availableIndices
   );
-  const learningProgress = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:learning_progress', startDate, endDate, availableIndices);
-  const appUsageStats = useESWithDateFilter<AppUsageDoc>(baseUrl, index, 'event_type:app_usage_stats', startDate, endDate, availableIndices);
-  const dailyActivity = useESWithDateFilter<DailyActivityDoc>(baseUrl, index, 'event_type:daily_activity', startDate, endDate, availableIndices);
-  const engagementMetrics = useESWithDateFilter<EngagementSessionDoc>(baseUrl, index, 'event_type:engagement_metrics', startDate, endDate, availableIndices);
-  const skillProgressAnalytics = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:skill_progress_analytics', startDate, endDate, availableIndices);
-  const skillCrossComparison = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:skill_cross_comparison', startDate, endDate, availableIndices);
-  const dropoutRiskAssessment = useESWithDateFilter<DropoutRiskDoc>(baseUrl, index, 'event_type:dropout_risk_assessment', startDate, endDate, availableIndices);
-  const crossServerMetrics = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_metrics', startDate, endDate, availableIndices);
-  const crossServerComparison = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_comparison', startDate, endDate, availableIndices);
+  const learningProgress = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:learning_progress', debouncedStartDate, debouncedEndDate, availableIndices);
+  const appUsageStats = useESWithDateFilter<AppUsageDoc>(baseUrl, index, 'event_type:app_usage_stats', debouncedStartDate, debouncedEndDate, availableIndices);
+  const dailyActivity = useESWithDateFilter<DailyActivityDoc>(baseUrl, index, 'event_type:daily_activity', debouncedStartDate, debouncedEndDate, availableIndices);
+  const engagementMetrics = useESWithDateFilter<EngagementSessionDoc>(baseUrl, index, 'event_type:engagement_metrics', debouncedStartDate, debouncedEndDate, availableIndices);
+  const skillProgressAnalytics = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:skill_progress_analytics', debouncedStartDate, debouncedEndDate, availableIndices);
+  const skillCrossComparison = useESWithDateFilter<LearningProgressDoc>(baseUrl, index, 'event_type:skill_cross_comparison', debouncedStartDate, debouncedEndDate, availableIndices);
+  const dropoutRiskAssessment = useESWithDateFilter<DropoutRiskDoc>(baseUrl, index, 'event_type:dropout_risk_assessment', debouncedStartDate, debouncedEndDate, availableIndices);
+  const crossServerMetrics = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_metrics', debouncedStartDate, debouncedEndDate, availableIndices);
+  const crossServerComparison = useESWithDateFilter<CrossServerDoc>(baseUrl, index, 'event_type:cross_server_comparison', debouncedStartDate, debouncedEndDate, availableIndices);
 
   // New monitoring module data hooks
-  const filesystemData = useESWithDateFilter<FileSystemDoc>(baseUrl, index, 'event_type:filesystem_activity', startDate, endDate, availableIndices);
-  const errorDebugData = useESWithDateFilter<ErrorDebugDoc>(baseUrl, index, 'event_type:error_debug', startDate, endDate, availableIndices);
-  const devEnvironmentData = useESWithDateFilter<DevEnvironmentDoc>(baseUrl, index, 'event_type:dev_environment', startDate, endDate, availableIndices);
-  const browserActivityData = useESWithDateFilter<BrowserActivityDoc>(baseUrl, index, 'event_type:browser_activity', startDate, endDate, availableIndices);
-  const codeQualityData = useESWithDateFilter<CodeQualityDoc>(baseUrl, index, 'event_type:code_quality', startDate, endDate, availableIndices);
-  const packageDependencyData = useESWithDateFilter<PackageDependencyDoc>(baseUrl, index, 'event_type:package_dependency', startDate, endDate, availableIndices);
-  const collaborationData = useESWithDateFilter<CollaborationDoc>(baseUrl, index, 'event_type:collaboration', startDate, endDate, availableIndices);
-  const learningPathData = useESWithDateFilter<LearningPathDoc>(baseUrl, index, 'event_type:learning_path', startDate, endDate, availableIndices);
-  const resourceAccessData = useESWithDateFilter<ResourceAccessDoc>(baseUrl, index, 'event_type:resource_access', startDate, endDate, availableIndices);
-  const timeDistributionData = useESWithDateFilter<TimeDistributionDoc>(baseUrl, index, 'event_type:time_distribution', startDate, endDate, availableIndices);
-  const hardwareUtilizationData = useESWithDateFilter<HardwareUtilizationDoc>(baseUrl, index, 'event_type:hardware_utilization', startDate, endDate, availableIndices);
-  const networkBehaviorData = useESWithDateFilter<NetworkBehaviorDoc>(baseUrl, index, 'event_type:network_behavior', startDate, endDate, availableIndices);
-  const terminalConsoleData = useESWithDateFilter<TerminalConsoleDoc>(baseUrl, index, 'event_type:terminal_console', startDate, endDate, availableIndices);
-  const projectLifecycleData = useESWithDateFilter<ProjectLifecycleDoc>(baseUrl, index, 'event_type:project_lifecycle', startDate, endDate, availableIndices);
+  const filesystemData = useESWithDateFilter<FileSystemDoc>(baseUrl, index, 'event_type:filesystem_activity', debouncedStartDate, debouncedEndDate, availableIndices);
+  const errorDebugData = useESWithDateFilter<ErrorDebugDoc>(baseUrl, index, 'event_type:error_debug', debouncedStartDate, debouncedEndDate, availableIndices);
+  const devEnvironmentData = useESWithDateFilter<DevEnvironmentDoc>(baseUrl, index, 'event_type:dev_environment', debouncedStartDate, debouncedEndDate, availableIndices);
+  const browserActivityData = useESWithDateFilter<BrowserActivityDoc>(baseUrl, index, 'event_type:browser_activity', debouncedStartDate, debouncedEndDate, availableIndices);
+  const codeQualityData = useESWithDateFilter<CodeQualityDoc>(baseUrl, index, 'event_type:code_quality', debouncedStartDate, debouncedEndDate, availableIndices);
+  const packageDependencyData = useESWithDateFilter<PackageDependencyDoc>(baseUrl, index, 'event_type:package_dependency', debouncedStartDate, debouncedEndDate, availableIndices);
+  const collaborationData = useESWithDateFilter<CollaborationDoc>(baseUrl, index, 'event_type:collaboration', debouncedStartDate, debouncedEndDate, availableIndices);
+  const learningPathData = useESWithDateFilter<LearningPathDoc>(baseUrl, index, 'event_type:learning_path', debouncedStartDate, debouncedEndDate, availableIndices);
+  const resourceAccessData = useESWithDateFilter<ResourceAccessDoc>(baseUrl, index, 'event_type:resource_access', debouncedStartDate, debouncedEndDate, availableIndices);
+  const timeDistributionData = useESWithDateFilter<TimeDistributionDoc>(baseUrl, index, 'event_type:time_distribution', debouncedStartDate, debouncedEndDate, availableIndices);
+  const hardwareUtilizationData = useESWithDateFilter<HardwareUtilizationDoc>(baseUrl, index, 'event_type:hardware_utilization', debouncedStartDate, debouncedEndDate, availableIndices);
+  const networkBehaviorData = useESWithDateFilter<NetworkBehaviorDoc>(baseUrl, index, 'event_type:network_behavior', debouncedStartDate, debouncedEndDate, availableIndices);
+  const terminalConsoleData = useESWithDateFilter<TerminalConsoleDoc>(baseUrl, index, 'event_type:terminal_console', debouncedStartDate, debouncedEndDate, availableIndices);
+  const projectLifecycleData = useESWithDateFilter<ProjectLifecycleDoc>(baseUrl, index, 'event_type:project_lifecycle', debouncedStartDate, debouncedEndDate, availableIndices);
 
   const isLoading = useMemo(() =>
     perf.isLoading || cmds.isLoading || windows.isLoading ||
@@ -1009,6 +1065,562 @@ export default function App() {
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  // CSV Export utility function
+  const exportToCSV = (data: any[], filename: string) => {
+    if (data.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
+    // Get all unique keys from data
+    const keys = Array.from(
+      new Set(data.flatMap(obj => Object.keys(obj)))
+    ).filter(key => typeof data[0][key] !== 'object'); // Exclude nested objects
+
+    // Create CSV header
+    const header = keys.join(',');
+
+    // Create CSV rows
+    const rows = data.map(row => {
+      return keys.map(key => {
+        const value = row[key];
+        // Handle values that might contain commas or quotes
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      }).join(',');
+    }).join('\n');
+
+    // Combine header and rows
+    const csv = `${header}\n${rows}`;
+
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Export all current tab data as CSV
+  const exportCurrentTabData = () => {
+    const dataMap: Record<string, { data: any[], name: string }> = {
+      'overview': { data: perfData, name: 'performance-metrics' },
+      'engagement': { data: engagementData, name: 'engagement-analytics' },
+      'learning': { data: learningProgress.data, name: 'learning-progress' },
+      'usage': { data: appUsageStats.data, name: 'app-usage' },
+      'risk': { data: dropoutRiskAssessment.data, name: 'risk-assessment' },
+      'comparison': { data: crossServerMetrics.data, name: 'cross-server-metrics' },
+      'security': { data: commands.data, name: 'security-commands' },
+      'analytics': { data: dailyActivity.data, name: 'daily-activity' },
+      'developer': {
+        data: [
+          ...filesystemData.data,
+          ...errorDebugData.data,
+          ...devEnvironmentData.data,
+          ...browserActivityData.data,
+          ...codeQualityData.data,
+          ...packageDependencyData.data,
+          ...collaborationData.data,
+          ...learningPathData.data,
+          ...resourceAccessData.data,
+          ...timeDistributionData.data,
+          ...hardwareUtilizationData.data,
+          ...networkBehaviorData.data,
+          ...terminalConsoleData.data,
+          ...projectLifecycleData.data
+        ],
+        name: 'developer-insights'
+      }
+    };
+
+    const tabData = dataMap[activeTab];
+    if (tabData && tabData.data.length > 0) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      exportToCSV(tabData.data, `${tabData.name}-${timestamp}`);
+    } else {
+      alert('No data available to export for this tab');
+    }
+  };
+
+  // URL State Management - for shareable dashboard links
+  useEffect(() => {
+    // Load state from URL on mount
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('index')) setIndex(params.get('index')!);
+    if (params.has('tab')) setActiveTab(params.get('tab')!);
+    if (params.has('startDate')) setStartDate(new Date(params.get('startDate')!));
+    if (params.has('endDate')) setEndDate(new Date(params.get('endDate')!));
+    if (params.has('preset')) setSelectedTimePreset(params.get('preset')!);
+    if (params.has('darkMode')) setDarkMode(params.get('darkMode') === 'true');
+    if (params.has('refresh')) setAutoRefreshInterval(Number(params.get('refresh')));
+  }, []);
+
+  // Update URL when state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set('index', index);
+    params.set('tab', activeTab);
+    params.set('startDate', startDate.toISOString());
+    params.set('endDate', endDate.toISOString());
+    params.set('preset', selectedTimePreset);
+    params.set('darkMode', String(darkMode));
+    params.set('refresh', String(autoRefreshInterval));
+
+    // Update URL without reloading the page
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [index, activeTab, startDate, endDate, selectedTimePreset, darkMode, autoRefreshInterval]);
+
+  // Copy shareable link to clipboard
+  const copyShareableLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Dashboard link copied to clipboard! Share it to preserve current view settings.');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Dashboard link copied to clipboard!');
+    });
+  };
+
+  // Debounce utility hook
+  const useDebounce = <T,>(value: T, delay: number): T => {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  };
+
+  // Debounced date values to reduce API calls
+  const debouncedStartDate = useDebounce(startDate, 500);
+  const debouncedEndDate = useDebounce(endDate, 500);
+
+  // Statistical calculation utilities
+  const calculateStats = (values: number[]) => {
+    if (values.length === 0) return null;
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const sum = values.reduce((a, b) => a + b, 0);
+    const mean = sum / values.length;
+
+    // Median
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+
+    // Standard Deviation
+    const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Percentiles
+    const getPercentile = (p: number) => {
+      const index = Math.ceil((p / 100) * sorted.length) - 1;
+      return sorted[Math.max(0, index)];
+    };
+
+    return {
+      count: values.length,
+      mean: mean,
+      median: median,
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      stdDev: stdDev,
+      p25: getPercentile(25),
+      p50: median,
+      p75: getPercentile(75),
+      p90: getPercentile(90),
+      p99: getPercentile(99)
+    };
+  };
+
+  // Statistical Summary Cards Component
+  const StatisticalSummary = ({ title, data, field }: { title: string, data: any[], field: string }) => {
+    const values = data
+      .map(d => {
+        // Handle nested fields (e.g., 'data.cpu')
+        const keys = field.split('.');
+        let value = d;
+        for (const key of keys) {
+          value = value?.[key];
+        }
+        return typeof value === 'number' ? value : null;
+      })
+      .filter((v): v is number => v !== null);
+
+    const stats = calculateStats(values);
+
+    if (!stats) {
+      return (
+        <div style={{
+          padding: 16,
+          backgroundColor: darkMode ? '#2d2d2d' : '#f9f9f9',
+          borderRadius: 8,
+          border: `1px solid ${darkMode ? '#444' : '#ddd'}`
+        }}>
+          <h4 style={{ marginTop: 0 }}>{title}</h4>
+          <p style={{ color: darkMode ? '#888' : '#999' }}>No data available</p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        padding: 16,
+        backgroundColor: darkMode ? '#2d2d2d' : '#ffffff',
+        borderRadius: 8,
+        border: `1px solid ${darkMode ? '#444' : '#ddd'}`,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <h4 style={{ marginTop: 0, marginBottom: 16, color: darkMode ? '#e0e0e0' : '#333' }}>{title}</h4>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: 12
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Count</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: darkMode ? '#e0e0e0' : '#333' }}>
+              {stats.count}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Mean</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>
+              {stats.mean.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Median</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4caf50' }}>
+              {stats.median.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Min</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff9800' }}>
+              {stats.min.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Max</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f44336' }}>
+              {stats.max.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>Std Dev</div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#9c27b0' }}>
+              {stats.stdDev.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>P25</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: darkMode ? '#ccc' : '#666' }}>
+              {stats.p25.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>P75</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: darkMode ? '#ccc' : '#666' }}>
+              {stats.p75.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>P90</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: darkMode ? '#ccc' : '#666' }}>
+              {stats.p90.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: darkMode ? '#888' : '#999', marginBottom: 4 }}>P99</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: darkMode ? '#ccc' : '#666' }}>
+              {stats.p99.toFixed(2)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Alert evaluation - check if any rules are triggered
+  useEffect(() => {
+    const evaluateAlerts = () => {
+      const newAlerts: AlertTrigger[] = [];
+
+      alertRules.filter(rule => rule.enabled).forEach(rule => {
+        if (rule.tab === 'overview' && rule.metric === 'cpu') {
+          const latestCPU = perf.data[perf.data.length - 1]?.data?.cpu?.utilization_percent;
+          if (latestCPU !== undefined) {
+            const triggered = rule.condition === 'above'
+              ? latestCPU > rule.threshold
+              : latestCPU < rule.threshold;
+
+            if (triggered) {
+              newAlerts.push({
+                ruleId: rule.id,
+                ruleName: rule.name,
+                value: latestCPU,
+                threshold: rule.threshold,
+                timestamp: new Date()
+              });
+            }
+          }
+        }
+        if (rule.tab === 'overview' && rule.metric === 'memory') {
+          const latestMemory = perf.data[perf.data.length - 1]?.data?.memory?.ram_percent;
+          if (latestMemory !== undefined) {
+            const triggered = rule.condition === 'above'
+              ? latestMemory > rule.threshold
+              : latestMemory < rule.threshold;
+
+            if (triggered) {
+              newAlerts.push({
+                ruleId: rule.id,
+                ruleName: rule.name,
+                value: latestMemory,
+                threshold: rule.threshold,
+                timestamp: new Date()
+              });
+            }
+          }
+        }
+      });
+
+      setActiveAlerts(newAlerts);
+
+      // Browser notification if alerts are triggered
+      if (newAlerts.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Dashboard Alert', {
+          body: `${newAlerts.length} alert(s) triggered`,
+          icon: '⚠️'
+        });
+      }
+    };
+
+    evaluateAlerts();
+  }, [perf.data, alertRules]);
+
+  // Alert Panel Component
+  const AlertPanel = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      right: showAlertPanel ? 0 : '-400px',
+      width: '400px',
+      height: '100vh',
+      backgroundColor: darkMode ? '#2d2d2d' : 'white',
+      boxShadow: '-2px 0 8px rgba(0,0,0,0.2)',
+      transition: 'right 0.3s ease',
+      zIndex: 2000,
+      overflowY: 'auto',
+      padding: 20
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        borderBottom: `2px solid ${darkMode ? '#444' : '#ddd'}`,
+        paddingBottom: 12
+      }}>
+        <h3 style={{ margin: 0 }}>Alert Configuration</h3>
+        <button
+          onClick={() => setShowAlertPanel(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '24px',
+            cursor: 'pointer',
+            color: darkMode ? '#e0e0e0' : '#333'
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Active Alerts */}
+      {activeAlerts.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h4 style={{ color: '#f44336', marginBottom: 12 }}>⚠️ Active Alerts ({activeAlerts.length})</h4>
+          {activeAlerts.map((alert, idx) => (
+            <div key={idx} style={{
+              padding: 12,
+              backgroundColor: darkMode ? '#3d2020' : '#ffebee',
+              borderLeft: '4px solid #f44336',
+              marginBottom: 8,
+              borderRadius: 4
+            }}>
+              <div style={{ fontWeight: 'bold', color: '#f44336' }}>{alert.ruleName}</div>
+              <div style={{ fontSize: '12px', marginTop: 4, color: darkMode ? '#ccc' : '#666' }}>
+                Value: {alert.value.toFixed(2)} | Threshold: {alert.threshold}
+              </div>
+              <div style={{ fontSize: '11px', marginTop: 2, color: darkMode ? '#888' : '#999' }}>
+                {alert.timestamp.toLocaleTimeString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Alert Rules */}
+      <h4>Alert Rules</h4>
+      {alertRules.map((rule) => (
+        <div key={rule.id} style={{
+          padding: 12,
+          backgroundColor: darkMode ? '#3d3d3d' : '#f9f9f9',
+          borderRadius: 4,
+          marginBottom: 12,
+          border: `1px solid ${darkMode ? '#555' : '#ddd'}`
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 'bold' }}>{rule.name}</span>
+            <input
+              type="checkbox"
+              checked={rule.enabled}
+              onChange={(e) => {
+                setAlertRules(alertRules.map(r =>
+                  r.id === rule.id ? { ...r, enabled: e.target.checked } : r
+                ));
+              }}
+              style={{ width: 20, height: 20, cursor: 'pointer' }}
+            />
+          </div>
+          <div style={{ fontSize: '12px', marginTop: 8, color: darkMode ? '#bbb' : '#666' }}>
+            {rule.metric} {rule.condition} {rule.threshold}
+          </div>
+        </div>
+      ))}
+
+      {/* Request Notification Permission */}
+      {'Notification' in window && Notification.permission === 'default' && (
+        <button
+          onClick={() => Notification.requestPermission()}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+            marginTop: 16
+          }}
+        >
+          Enable Browser Notifications
+        </button>
+      )}
+    </div>
+  );
+
+  // Data Table component for table view
+  const DataTable = ({ data, maxRows = 100 }: { data: any[], maxRows?: number }) => {
+    if (data.length === 0) {
+      return <NoDataMessage message="No data available to display in table view" />;
+    }
+
+    // Get all unique keys from the data
+    const allKeys = Array.from(
+      new Set(data.flatMap(obj => Object.keys(obj)))
+    ).filter(key => {
+      // Exclude complex nested objects for table view
+      const sampleValue = data.find(d => d[key])?.[key];
+      return typeof sampleValue !== 'object' || sampleValue === null;
+    });
+
+    const displayData = data.slice(0, maxRows);
+
+    return (
+      <div style={{ overflowX: 'auto', marginTop: 16 }}>
+        <div style={{
+          marginBottom: 12,
+          color: darkMode ? '#bbb' : '#666',
+          fontSize: '14px'
+        }}>
+          Showing {displayData.length} of {data.length} records
+          {data.length > maxRows && ` (limited to first ${maxRows} rows)`}
+        </div>
+        <table style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          backgroundColor: darkMode ? '#2d2d2d' : 'white',
+          border: `1px solid ${darkMode ? '#444' : '#ddd'}`
+        }}>
+          <thead>
+            <tr style={{
+              backgroundColor: darkMode ? '#3d3d3d' : '#f5f5f5',
+              borderBottom: `2px solid ${darkMode ? '#555' : '#ddd'}`
+            }}>
+              {allKeys.map(key => (
+                <th key={key} style={{
+                  padding: '12px 8px',
+                  textAlign: 'left',
+                  fontWeight: 'bold',
+                  color: darkMode ? '#e0e0e0' : '#333',
+                  fontSize: '14px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayData.map((row, rowIndex) => (
+              <tr key={rowIndex} style={{
+                borderBottom: `1px solid ${darkMode ? '#444' : '#eee'}`,
+                '&:hover': {
+                  backgroundColor: darkMode ? '#3a3a3a' : '#f9f9f9'
+                }
+              }}>
+                {allKeys.map(key => (
+                  <td key={key} style={{
+                    padding: '10px 8px',
+                    color: darkMode ? '#ccc' : '#555',
+                    fontSize: '13px',
+                    maxWidth: '200px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {row[key] !== null && row[key] !== undefined
+                      ? String(row[key])
+                      : '-'}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   // Loading Skeleton component
@@ -5978,6 +6590,9 @@ export default function App() {
       {/* Loading Skeleton - shown while data is loading */}
       {isLoading && !isGeneratingPDF && <LoadingSkeleton />}
 
+      {/* Alert Panel */}
+      <AlertPanel />
+
       {/* Main Content - hidden when loading */}
       <div style={{ display: isLoading && !isGeneratingPDF ? 'none' : 'block' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -6263,6 +6878,52 @@ export default function App() {
             🖼️ Export Charts
           </button>
 
+          <button
+            onClick={exportCurrentTabData}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+            }}
+            title="Export current tab data as CSV"
+          >
+            📊 Export CSV
+          </button>
+
+          <button
+            onClick={copyShareableLink}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#9c27b0',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+            }}
+            title="Copy shareable link with current dashboard state"
+          >
+            🔗 Share
+          </button>
+
+          <button
+            onClick={() => setShowAlertPanel(!showAlertPanel)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeAlerts.length > 0 ? '#f44336' : '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+            title="Alert Configuration"
+          >
+            🔔 Alerts {activeAlerts.length > 0 && `(${activeAlerts.length})`}
+          </button>
+
           {/* Auto-Refresh Control */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>
@@ -6427,6 +7088,61 @@ export default function App() {
         </div>
       )}
 
+      {/* View Mode Toggle */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+        gap: 8,
+        alignItems: 'center'
+      }}>
+        <button
+          onClick={() => setShowStats(!showStats)}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: showStats ? '#4caf50' : '#f5f5f5',
+            color: showStats ? 'white' : '#333',
+            border: showStats ? '1px solid #4caf50' : '1px solid #ddd',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: showStats ? 'bold' : 'normal',
+          }}
+        >
+          📈 {showStats ? 'Hide' : 'Show'} Statistics
+        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setViewMode('chart')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: viewMode === 'chart' ? '#8884d8' : '#f5f5f5',
+              color: viewMode === 'chart' ? 'white' : '#333',
+              border: viewMode === 'chart' ? '1px solid #8884d8' : '1px solid #ddd',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: viewMode === 'chart' ? 'bold' : 'normal',
+            }}
+          >
+            📊 Chart View
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: viewMode === 'table' ? '#8884d8' : '#f5f5f5',
+              color: viewMode === 'table' ? 'white' : '#333',
+              border: viewMode === 'table' ? '1px solid #8884d8' : '1px solid #ddd',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: viewMode === 'table' ? 'bold' : 'normal',
+            }}
+          >
+            📋 Table View
+          </button>
+        </div>
+      </div>
+
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 24, borderBottom: '1px solid #ddd' }}>
         {tabs.map(tab => (
@@ -6449,9 +7165,93 @@ export default function App() {
         ))}
       </div>
 
+      {/* Statistical Summaries */}
+      {showStats && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ marginBottom: 16 }}>Statistical Summary</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+            {activeTab === 'overview' && (
+              <>
+                <StatisticalSummary title="CPU Utilization (%)" data={perf.data} field="data.cpu.utilization_percent" />
+                <StatisticalSummary title="Memory Usage (%)" data={perf.data} field="data.memory.ram_percent" />
+                <StatisticalSummary title="Network RX (MB)" data={perfData} field="network_rx" />
+              </>
+            )}
+            {activeTab === 'engagement' && (
+              <>
+                <StatisticalSummary title="Session Duration (min)" data={engagementSessions.data} field="data.duration_minutes" />
+                <StatisticalSummary title="Commands per Session" data={engagementSessions.data} field="data.commands_count" />
+              </>
+            )}
+            {activeTab === 'learning' && (
+              <>
+                <StatisticalSummary title="Progress (%)" data={learningProgress.data} field="data.progress_percent" />
+                <StatisticalSummary title="Score" data={learningProgress.data} field="data.score" />
+              </>
+            )}
+            {activeTab === 'usage' && (
+              <>
+                <StatisticalSummary title="App Duration (min)" data={appUsageStats.data} field="data.duration_minutes" />
+              </>
+            )}
+            {activeTab === 'risk' && (
+              <>
+                <StatisticalSummary title="Risk Score" data={dropoutRiskAssessment.data} field="data.risk_score" />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tab Content */}
       <div data-tab-content style={{ marginTop: 16 }}>
-      {renderTabContent()}
+      {viewMode === 'chart' ? (
+        renderTabContent()
+      ) : (
+        // Table View
+        <div>
+          {activeTab === 'overview' && <DataTable data={perfData} />}
+          {activeTab === 'engagement' && <DataTable data={engagementData} />}
+          {activeTab === 'learning' && <DataTable data={learningProgress.data} />}
+          {activeTab === 'usage' && <DataTable data={appUsageStats.data} />}
+          {activeTab === 'risk' && <DataTable data={dropoutRiskAssessment.data} />}
+          {activeTab === 'comparison' && <DataTable data={crossServerMetrics.data} />}
+          {activeTab === 'security' && <DataTable data={commands.data} />}
+          {activeTab === 'analytics' && <DataTable data={dailyActivity.data} />}
+          {activeTab === 'developer' && (
+            <div>
+              <h4>FileSystem Activity</h4>
+              <DataTable data={filesystemData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Error/Debug Data</h4>
+              <DataTable data={errorDebugData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Dev Environment</h4>
+              <DataTable data={devEnvironmentData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Browser Activity</h4>
+              <DataTable data={browserActivityData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Code Quality</h4>
+              <DataTable data={codeQualityData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Package Dependencies</h4>
+              <DataTable data={packageDependencyData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Collaboration</h4>
+              <DataTable data={collaborationData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Learning Path</h4>
+              <DataTable data={learningPathData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Resource Access</h4>
+              <DataTable data={resourceAccessData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Time Distribution</h4>
+              <DataTable data={timeDistributionData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Hardware Utilization</h4>
+              <DataTable data={hardwareUtilizationData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Network Behavior</h4>
+              <DataTable data={networkBehaviorData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Terminal/Console</h4>
+              <DataTable data={terminalConsoleData.data} maxRows={50} />
+              <h4 style={{ marginTop: 24 }}>Project Lifecycle</h4>
+              <DataTable data={projectLifecycleData.data} maxRows={50} />
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Debug Info */}
