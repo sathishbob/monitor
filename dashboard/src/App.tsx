@@ -1,5 +1,5 @@
 // Version: 2025-01-15-v3 - Fixed chart line hiding with conditional rendering
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Component, ErrorInfo, ReactNode } from 'react';
 import { LineChart, BarChart, PieChart, AreaChart, ComposedChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Cell, Line, Bar, Area, Pie } from 'recharts';
 import './App.css';
 
@@ -420,6 +420,96 @@ interface ProjectLifecycleDoc {
   };
 }
 
+// Error Boundary Component for Chart Fault Tolerance
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  chartName?: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ChartErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Chart Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <div style={{
+          padding: 32,
+          backgroundColor: '#fff3e0',
+          borderRadius: 8,
+          border: '2px dashed #ff9800',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: 16 }}>⚠️</div>
+          <h3 style={{ color: '#f57c00', marginBottom: 8 }}>
+            Chart Rendering Error
+          </h3>
+          <p style={{ color: '#666', marginBottom: 16 }}>
+            {this.props.chartName || 'This chart'} encountered an error and couldn't be displayed.
+          </p>
+          <details style={{ textAlign: 'left', marginTop: 16 }}>
+            <summary style={{ cursor: 'pointer', color: '#f57c00', fontWeight: 'bold' }}>
+              Error Details
+            </summary>
+            <pre style={{
+              marginTop: 8,
+              padding: 12,
+              backgroundColor: '#f5f5f5',
+              borderRadius: 4,
+              fontSize: '12px',
+              overflow: 'auto'
+            }}>
+              {this.state.error?.message}
+              {'\n\n'}
+              {this.state.error?.stack}
+            </pre>
+          </details>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            style={{
+              marginTop: 16,
+              padding: '8px 16px',
+              backgroundColor: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 Reload Dashboard
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Custom hook for Elasticsearch queries with date filtering
 function useESWithDateFilter<T>(baseUrl: string, index: string, query: string, startDate?: Date, endDate?: Date, availableIndices?: string[]) {
   const [data, setData] = useState<T[]>([]);
@@ -659,6 +749,93 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('alertRules', JSON.stringify(alertRules));
   }, [alertRules]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      // D - Toggle dark mode
+      if (key === 'd') {
+        setDarkMode(prev => !prev);
+        event.preventDefault();
+      }
+
+      // R - Refresh data
+      if (key === 'r') {
+        setRefreshKey(prev => prev + 1);
+        event.preventDefault();
+      }
+
+      // F - Toggle show stats
+      if (key === 'f') {
+        setShowStats(prev => !prev);
+        event.preventDefault();
+      }
+
+      // S - Toggle share/alert panel
+      if (key === 's') {
+        setShowAlertPanel(prev => !prev);
+        event.preventDefault();
+      }
+
+      // T - Toggle table/chart view
+      if (key === 't') {
+        setViewMode(prev => prev === 'chart' ? 'table' : 'chart');
+        event.preventDefault();
+      }
+
+      // 1-9 - Switch tabs
+      const tabIndex = parseInt(key);
+      if (tabIndex >= 1 && tabIndex <= 9) {
+        const tabIds = ['overview', 'engagement', 'learning', 'usage', 'risk', 'comparison', 'security', 'analytics', 'developer'];
+        if (tabIndex <= tabIds.length) {
+          setActiveTab(tabIds[tabIndex - 1]);
+          event.preventDefault();
+        }
+      }
+
+      // Escape - Close panels
+      if (key === 'escape') {
+        setShowAlertPanel(false);
+        setShowCustomDateFilter(false);
+        event.preventDefault();
+      }
+
+      // / - Focus search bar
+      if (key === '/') {
+        setShowSearchBar(true);
+        event.preventDefault();
+        // Focus the search input after a short delay
+        setTimeout(() => {
+          const searchInput = document.getElementById('global-search-input');
+          if (searchInput) searchInput.focus();
+        }, 100);
+      }
+
+      // ? - Show keyboard shortcuts help
+      if (key === '?' && event.shiftKey) {
+        setShowKeyboardHelp(prev => !prev);
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  // Show keyboard shortcuts help
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
+
+  // Global search state
+  const [globalSearch, setGlobalSearch] = useState<string>('');
+  const [showSearchBar, setShowSearchBar] = useState<boolean>(false);
 
   // Function to fetch available indices matching lab_mon* pattern
   const fetchAvailableIndices = async () => {
@@ -1427,6 +1604,305 @@ export default function App() {
 
     evaluateAlerts();
   }, [perf.data, alertRules]);
+
+  // Global Search Bar Component
+  const GlobalSearchBar = () => {
+    if (!showSearchBar) return null;
+
+    // Filter data based on search query
+    const searchResults = useMemo(() => {
+      if (!globalSearch.trim()) return null;
+
+      const query = globalSearch.toLowerCase();
+      const results: any[] = [];
+
+      // Search through tabs
+      const tabs = ['overview', 'engagement', 'learning', 'usage', 'risk', 'comparison', 'security', 'analytics', 'developer'];
+      tabs.forEach(tab => {
+        if (tab.toLowerCase().includes(query)) {
+          results.push({ type: 'tab', name: tab, action: () => setActiveTab(tab) });
+        }
+      });
+
+      // Search through data (sample from current tab)
+      const currentData = activeTab === 'overview' ? perfData :
+                          activeTab === 'engagement' ? engagementData :
+                          activeTab === 'learning' ? learningProgress.data :
+                          activeTab === 'usage' ? appUsageStats.data :
+                          activeTab === 'risk' ? dropoutRiskAssessment.data :
+                          activeTab === 'comparison' ? crossServerMetrics.data :
+                          activeTab === 'security' ? commands.data :
+                          activeTab === 'analytics' ? dailyActivity.data :
+                          filesystemData.data;
+
+      // Search through current data
+      currentData.slice(0, 10).forEach((item: any, idx) => {
+        const itemStr = JSON.stringify(item).toLowerCase();
+        if (itemStr.includes(query)) {
+          results.push({
+            type: 'data',
+            name: `${activeTab} record #${idx + 1}`,
+            preview: JSON.stringify(item).substring(0, 100) + '...',
+            data: item
+          });
+        }
+      });
+
+      return results.slice(0, 20); // Limit to 20 results
+    }, [globalSearch, activeTab, perfData, engagementData, learningProgress.data, appUsageStats.data,
+        dropoutRiskAssessment.data, crossServerMetrics.data, commands.data, dailyActivity.data, filesystemData.data]);
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        justifyContent: 'center',
+        paddingTop: 100,
+        zIndex: 2500,
+        padding: 20
+      }} onClick={() => setShowSearchBar(false)}>
+        <div style={{
+          backgroundColor: darkMode ? '#2d2d2d' : 'white',
+          borderRadius: 12,
+          padding: 20,
+          maxWidth: 700,
+          width: '100%',
+          maxHeight: '70vh',
+          overflowY: 'auto',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 20,
+            paddingBottom: 16,
+            borderBottom: `2px solid ${darkMode ? '#444' : '#ddd'}`
+          }}>
+            <span style={{ fontSize: '24px' }}>🔍</span>
+            <input
+              id="global-search-input"
+              type="text"
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              placeholder="Search tabs, data, metrics... (Press Esc to close)"
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                fontSize: '16px',
+                border: `2px solid ${darkMode ? '#555' : '#ddd'}`,
+                borderRadius: 8,
+                backgroundColor: darkMode ? '#1a1a1a' : 'white',
+                color: darkMode ? '#e0e0e0' : '#333',
+                outline: 'none'
+              }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowSearchBar(false);
+                  setGlobalSearch('');
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                setShowSearchBar(false);
+                setGlobalSearch('');
+              }}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: darkMode ? '#3d3d3d' : '#f5f5f5',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontSize: '20px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {searchResults && searchResults.length > 0 ? (
+            <div>
+              <div style={{ fontSize: '12px', color: darkMode ? '#888' : '#999', marginBottom: 12 }}>
+                Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
+              </div>
+              {searchResults.map((result, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (result.action) result.action();
+                    setShowSearchBar(false);
+                    setGlobalSearch('');
+                  }}
+                  style={{
+                    padding: 12,
+                    marginBottom: 8,
+                    backgroundColor: darkMode ? '#3d3d3d' : '#f9f9f9',
+                    borderRadius: 8,
+                    cursor: result.action ? 'pointer' : 'default',
+                    border: `1px solid ${darkMode ? '#555' : '#ddd'}`,
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = darkMode ? '#4d4d4d' : '#e8e8e8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = darkMode ? '#3d3d3d' : '#f9f9f9';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span>{result.type === 'tab' ? '📑' : '📄'}</span>
+                    <span style={{ fontWeight: 'bold', color: darkMode ? '#e0e0e0' : '#333' }}>
+                      {result.name}
+                    </span>
+                  </div>
+                  {result.preview && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: darkMode ? '#999' : '#666',
+                      fontFamily: 'monospace',
+                      marginTop: 4
+                    }}>
+                      {result.preview}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : globalSearch.trim() ? (
+            <div style={{
+              padding: 40,
+              textAlign: 'center',
+              color: darkMode ? '#888' : '#999'
+            }}>
+              No results found for "{globalSearch}"
+            </div>
+          ) : (
+            <div style={{
+              padding: 40,
+              textAlign: 'center',
+              color: darkMode ? '#888' : '#999'
+            }}>
+              Start typing to search tabs, data, and metrics...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Keyboard Help Modal Component
+  const KeyboardHelpModal = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      display: showKeyboardHelp ? 'flex' : 'none',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3000,
+      padding: 20
+    }} onClick={() => setShowKeyboardHelp(false)}>
+      <div style={{
+        backgroundColor: darkMode ? '#2d2d2d' : 'white',
+        borderRadius: 12,
+        padding: 32,
+        maxWidth: 600,
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+          borderBottom: `2px solid ${darkMode ? '#444' : '#ddd'}`,
+          paddingBottom: 16
+        }}>
+          <h2 style={{ margin: 0 }}>⌨️ Keyboard Shortcuts</h2>
+          <button
+            onClick={() => setShowKeyboardHelp(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '28px',
+              cursor: 'pointer',
+              color: darkMode ? '#e0e0e0' : '#333'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gap: 16 }}>
+          <ShortcutRow shortcut="D" description="Toggle dark mode" />
+          <ShortcutRow shortcut="R" description="Refresh data" />
+          <ShortcutRow shortcut="F" description="Toggle statistics view" />
+          <ShortcutRow shortcut="S" description="Toggle alert panel" />
+          <ShortcutRow shortcut="T" description="Toggle table/chart view" />
+          <ShortcutRow shortcut="/" description="Open global search" />
+          <ShortcutRow shortcut="1-9" description="Switch between tabs" />
+          <ShortcutRow shortcut="Esc" description="Close panels and modals" />
+          <ShortcutRow shortcut="?" description="Show this help (Shift + ?)" />
+        </div>
+
+        <div style={{
+          marginTop: 24,
+          padding: 16,
+          backgroundColor: darkMode ? '#3d3d3d' : '#f9f9f9',
+          borderRadius: 8,
+          fontSize: '14px',
+          color: darkMode ? '#bbb' : '#666'
+        }}>
+          <strong>💡 Tip:</strong> Shortcuts work when you're not typing in an input field
+        </div>
+      </div>
+    </div>
+  );
+
+  const ShortcutRow = ({ shortcut, description }: { shortcut: string, description: string }) => (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 16px',
+      backgroundColor: darkMode ? '#3d3d3d' : '#f9f9f9',
+      borderRadius: 8,
+      gap: 16
+    }}>
+      <kbd style={{
+        padding: '6px 12px',
+        backgroundColor: darkMode ? '#1a1a1a' : '#fff',
+        border: `2px solid ${darkMode ? '#555' : '#ddd'}`,
+        borderRadius: 6,
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        minWidth: 60,
+        textAlign: 'center',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        {shortcut}
+      </kbd>
+      <span style={{
+        flex: 1,
+        color: darkMode ? '#e0e0e0' : '#333',
+        fontSize: '15px'
+      }}>
+        {description}
+      </span>
+    </div>
+  );
 
   // Alert Panel Component
   const AlertPanel = () => (
@@ -6593,6 +7069,12 @@ export default function App() {
       {/* Alert Panel */}
       <AlertPanel />
 
+      {/* Keyboard Help Modal */}
+      <KeyboardHelpModal />
+
+      {/* Global Search Bar */}
+      <GlobalSearchBar />
+
       {/* Main Content - hidden when loading */}
       <div style={{ display: isLoading && !isGeneratingPDF ? 'none' : 'block' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -6922,6 +7404,21 @@ export default function App() {
             title="Alert Configuration"
           >
             🔔 Alerts {activeAlerts.length > 0 && `(${activeAlerts.length})`}
+          </button>
+
+          <button
+            onClick={() => setShowKeyboardHelp(true)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#607d8b',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+            }}
+            title="Keyboard Shortcuts (Press ? to toggle)"
+          >
+            ⌨️ Shortcuts
           </button>
 
           {/* Auto-Refresh Control */}
