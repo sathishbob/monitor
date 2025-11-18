@@ -67,178 +67,138 @@ class AlertManager:
         """Check a single metric against all relevant thresholds."""
         alerts = []
         service = metric.get('service', '').lower()
+        cloud_provider = metric.get('cloud_provider', '').lower()
 
-        # Check compute thresholds
-        if service in ['ec2', 'computeengine', 'virtualmachines']:
-            alerts.extend(self._check_compute_thresholds(metric))
+        # Get provider-specific thresholds
+        provider_thresholds = self.thresholds.get(cloud_provider, {})
 
-        # Check storage thresholds
-        elif service in ['s3', 'cloudstorage', 'blobstorage']:
-            alerts.extend(self._check_storage_thresholds(metric))
+        # Check resource count thresholds
+        total_count = metric.get('total_count')
+        if total_count is not None:
+            alerts.extend(self._check_resource_count_thresholds(metric, provider_thresholds))
 
-        # Check database thresholds
-        elif service in ['rds', 'cloudsql', 'sqldatabase']:
-            alerts.extend(self._check_database_thresholds(metric))
-
-        # Check serverless thresholds
-        elif service in ['lambda', 'cloudfunctions', 'functions']:
-            alerts.extend(self._check_serverless_thresholds(metric))
-
-        # Check network thresholds
-        elif service in ['elb', 'cloudloadbalancing', 'loadbalancer']:
-            alerts.extend(self._check_network_thresholds(metric))
+        # Check cost thresholds
+        if metric.get('cost_type'):
+            alerts.extend(self._check_cost_thresholds(metric, provider_thresholds))
 
         return alerts
 
-    def _check_compute_thresholds(self, metric: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check compute resource thresholds."""
+    def _check_resource_count_thresholds(self, metric: Dict[str, Any], provider_thresholds: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check resource count against thresholds."""
         alerts = []
-        compute_thresholds = self.thresholds.get('compute', {})
+        service = metric.get('service', '').lower()
+        resource_type = metric.get('resource_type', '')
+        total_count = metric.get('total_count', 0)
+        region = metric.get('region', 'unknown')
 
-        # CPU utilization
-        cpu = metric.get('cpu_utilization')
-        cpu_threshold = compute_thresholds.get('cpu_utilization_percent', 80)
-        if cpu and cpu > cpu_threshold:
+        # Build threshold key: service_resourcetype_per_region or service_resourcetype_total
+        # Examples: ec2_instances_per_region, s3_buckets_total, lambda_functions_per_region
+        is_regional = region not in ['global', 'all-regions', 'all-zones']
+
+        threshold_key = f"{service}_{resource_type}"
+        if is_regional:
+            threshold_key += "_per_region"
+        else:
+            threshold_key += "_total"
+
+        threshold_value = provider_thresholds.get(threshold_key)
+
+        if threshold_value is not None and total_count > threshold_value:
+            # Determine severity based on how much threshold is exceeded
+            excess_percent = ((total_count - threshold_value) / threshold_value) * 100
+
+            if excess_percent > 50:
+                severity = 'CRITICAL'
+            elif excess_percent > 20:
+                severity = 'WARNING'
+            else:
+                severity = 'INFO'
+
+            # Get breakdown information if available
+            breakdown_info = []
+            if metric.get('status_breakdown'):
+                breakdown_info.append(f"Status: {metric['status_breakdown']}")
+            if metric.get('state_breakdown'):
+                breakdown_info.append(f"State: {metric['state_breakdown']}")
+            if metric.get('type_breakdown'):
+                breakdown_info.append(f"Type: {metric['type_breakdown']}")
+
+            breakdown_str = ", ".join(breakdown_info) if breakdown_info else ""
+
+            message = f"{service.upper()} {resource_type} count ({total_count:,}) exceeds threshold ({threshold_value:,})"
+            if region != 'global':
+                message += f" in {region}"
+            if breakdown_str:
+                message += f" [{breakdown_str}]"
+
             alerts.append({
-                'severity': 'WARNING' if cpu < 90 else 'CRITICAL',
-                'metric_type': 'cpu_utilization',
-                'current_value': cpu,
-                'threshold': cpu_threshold,
+                'severity': severity,
+                'metric_type': 'resource_count',
+                'current_value': total_count,
+                'threshold': threshold_value,
                 'resource': metric,
-                'message': f"CPU utilization ({cpu:.1f}%) exceeds threshold ({cpu_threshold}%)"
-            })
-
-        # Memory utilization
-        memory = metric.get('memory_utilization')
-        memory_threshold = compute_thresholds.get('memory_utilization_percent', 85)
-        if memory and memory > memory_threshold:
-            alerts.append({
-                'severity': 'WARNING' if memory < 95 else 'CRITICAL',
-                'metric_type': 'memory_utilization',
-                'current_value': memory,
-                'threshold': memory_threshold,
-                'resource': metric,
-                'message': f"Memory utilization ({memory:.1f}%) exceeds threshold ({memory_threshold}%)"
-            })
-
-        return alerts
-
-    def _check_storage_thresholds(self, metric: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check storage resource thresholds."""
-        alerts = []
-        storage_thresholds = self.thresholds.get('storage', {})
-
-        # Bucket size
-        size_gb = metric.get('size_gb', 0)
-        size_threshold = storage_thresholds.get('bucket_size_gb', 1000)
-        if size_gb > size_threshold:
-            alerts.append({
-                'severity': 'WARNING',
-                'metric_type': 'storage_size',
-                'current_value': size_gb,
-                'threshold': size_threshold,
-                'resource': metric,
-                'message': f"Storage size ({size_gb:.1f} GB) exceeds threshold ({size_threshold} GB)"
-            })
-
-        # Object count
-        object_count = metric.get('object_count', 0)
-        count_threshold = storage_thresholds.get('bucket_object_count', 1000000)
-        if object_count > count_threshold:
-            alerts.append({
-                'severity': 'INFO',
-                'metric_type': 'object_count',
-                'current_value': object_count,
-                'threshold': count_threshold,
-                'resource': metric,
-                'message': f"Object count ({object_count:,}) exceeds threshold ({count_threshold:,})"
+                'message': message,
+                'service': service,
+                'resource_type': resource_type
             })
 
         return alerts
 
-    def _check_database_thresholds(self, metric: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check database resource thresholds."""
+    def _check_cost_thresholds(self, metric: Dict[str, Any], provider_thresholds: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check cost against budget thresholds."""
         alerts = []
-        db_thresholds = self.thresholds.get('database', {})
+        cost_type = metric.get('cost_type', '')
+        total_cost = metric.get('total_cost_usd', 0)
 
-        # CPU utilization
-        cpu = metric.get('cpu_utilization')
-        cpu_threshold = db_thresholds.get('cpu_utilization_percent', 75)
-        if cpu and cpu > cpu_threshold:
-            alerts.append({
-                'severity': 'WARNING' if cpu < 85 else 'CRITICAL',
-                'metric_type': 'db_cpu_utilization',
-                'current_value': cpu,
-                'threshold': cpu_threshold,
-                'resource': metric,
-                'message': f"Database CPU ({cpu:.1f}%) exceeds threshold ({cpu_threshold}%)"
-            })
+        # Check monthly budget
+        if cost_type in ['monthly', 'monthly_by_service']:
+            monthly_budget = provider_thresholds.get('monthly_budget_usd')
 
-        # Connection count
-        connections = metric.get('connection_count')
-        conn_threshold = db_thresholds.get('connection_count', 500)
-        if connections and connections > conn_threshold:
-            alerts.append({
-                'severity': 'WARNING',
-                'metric_type': 'db_connections',
-                'current_value': connections,
-                'threshold': conn_threshold,
-                'resource': metric,
-                'message': f"Database connections ({connections}) exceeds threshold ({conn_threshold})"
-            })
+            if monthly_budget and total_cost > monthly_budget:
+                excess_percent = ((total_cost - monthly_budget) / monthly_budget) * 100
 
-        return alerts
+                if excess_percent > 20:
+                    severity = 'CRITICAL'
+                elif excess_percent > 10:
+                    severity = 'WARNING'
+                else:
+                    severity = 'INFO'
 
-    def _check_serverless_thresholds(self, metric: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check serverless function thresholds."""
-        alerts = []
-        serverless_thresholds = self.thresholds.get('serverless', {})
+                message = f"Monthly cost (${total_cost:,.2f}) exceeds budget (${monthly_budget:,.2f})"
 
-        # Error rate
-        error_rate = metric.get('error_rate', 0)
-        error_threshold = serverless_thresholds.get('error_rate_percent', 5)
-        if error_rate > error_threshold:
-            alerts.append({
-                'severity': 'WARNING' if error_rate < 10 else 'CRITICAL',
-                'metric_type': 'function_error_rate',
-                'current_value': error_rate,
-                'threshold': error_threshold,
-                'resource': metric,
-                'message': f"Function error rate ({error_rate:.1f}%) exceeds threshold ({error_threshold}%)"
-            })
+                # Add service breakdown if available
+                if metric.get('service_breakdown'):
+                    top_services = sorted(
+                        metric['service_breakdown'].items(),
+                        key=lambda x: x[1],
+                        reverse=True
+                    )[:5]
+                    message += f" - Top services: {dict(top_services)}"
 
-        # Invocation count (hourly)
-        invocations = metric.get('invocations', 0)
-        inv_threshold = serverless_thresholds.get('invocation_count_per_hour', 100000)
-        if invocations > inv_threshold:
-            alerts.append({
-                'severity': 'INFO',
-                'metric_type': 'function_invocations',
-                'current_value': invocations,
-                'threshold': inv_threshold,
-                'resource': metric,
-                'message': f"Function invocations ({invocations:,}) exceeds threshold ({inv_threshold:,})"
-            })
+                alerts.append({
+                    'severity': severity,
+                    'metric_type': 'cost_budget',
+                    'current_value': total_cost,
+                    'threshold': monthly_budget,
+                    'resource': metric,
+                    'message': message
+                })
 
-        return alerts
+        # Check daily cost anomalies
+        elif cost_type == 'daily':
+            daily_budget = provider_thresholds.get('daily_budget_usd')
 
-    def _check_network_thresholds(self, metric: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Check network resource thresholds."""
-        alerts = []
-        network_thresholds = self.thresholds.get('network', {})
+            if daily_budget and total_cost > daily_budget:
+                message = f"Daily cost (${total_cost:,.2f}) exceeds expected (${daily_budget:,.2f})"
 
-        # Request count
-        requests = metric.get('request_count', 0)
-        request_threshold = network_thresholds.get('load_balancer_requests_per_minute', 10000)
-        if requests > request_threshold:
-            alerts.append({
-                'severity': 'INFO',
-                'metric_type': 'lb_requests',
-                'current_value': requests,
-                'threshold': request_threshold,
-                'resource': metric,
-                'message': f"Load balancer requests ({requests:,}) exceeds threshold ({request_threshold:,})"
-            })
+                alerts.append({
+                    'severity': 'WARNING',
+                    'metric_type': 'daily_cost_anomaly',
+                    'current_value': total_cost,
+                    'threshold': daily_budget,
+                    'resource': metric,
+                    'message': message
+                })
 
         return alerts
 
