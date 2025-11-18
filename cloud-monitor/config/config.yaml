@@ -65,44 +65,166 @@ azure:
       client_id: "${AZURE_DEV_CLIENT_ID}"
       client_secret: "${AZURE_DEV_CLIENT_SECRET}"
 
-# Resource Thresholds for Alerting
+# Resource COUNT Thresholds for Alerting
+# NOTE: These are INVENTORY thresholds - how many resources exist, not performance metrics
+# Example: Alert when you have 52 EC2 instances in a region (threshold: 50)
 thresholds:
-  # Compute/VM Thresholds
-  compute:
-    cpu_utilization_percent: 80
-    memory_utilization_percent: 85
-    disk_utilization_percent: 90
-    running_instances_count: 50
+  # AWS Resource Count Thresholds
+  aws:
+    # Compute - per region thresholds
+    ec2_instances_per_region: 50
+    ec2_volumes_per_region: 100
+    ec2_snapshots_per_region: 200
+    ec2_amis_per_region: 50
+    ec2_elastic_ips_per_region: 10
 
-  # Storage Thresholds
-  storage:
-    bucket_size_gb: 1000
-    bucket_object_count: 1000000
-    total_storage_gb: 5000
+    # Container - per region thresholds
+    ecs_clusters_per_region: 10
+    eks_clusters_per_region: 5
+    ecr_repositories_per_region: 50
 
-  # Database Thresholds
-  database:
-    cpu_utilization_percent: 75
-    memory_utilization_percent: 80
-    storage_utilization_percent: 85
-    connection_count: 500
+    # Database - per region thresholds
+    rds_instances_per_region: 20
+    rds_clusters_per_region: 10
+    dynamodb_tables_per_region: 50
+    elasticache_clusters_per_region: 10
+    redshift_clusters_per_region: 5
 
-  # Network Thresholds
-  network:
-    bandwidth_mbps: 1000
-    data_transfer_gb_per_day: 500
-    load_balancer_requests_per_minute: 10000
+    # Storage - global thresholds
+    s3_buckets_total: 100
+    efs_filesystems_per_region: 20
 
-  # Cost Thresholds (USD per day)
-  cost:
-    daily_spend: 1000
-    monthly_projection: 30000
+    # Networking - per region thresholds
+    vpc_vpcs_per_region: 5
+    vpc_subnets_per_region: 20
+    vpc_security_groups_per_region: 100
+    elb_load_balancers_per_region: 20
+    vpc_nat_gateways_per_region: 5
 
-  # Lambda/Functions Thresholds
-  serverless:
-    invocation_count_per_hour: 100000
-    error_rate_percent: 5
-    duration_ms_p99: 5000
+    # Serverless - per region thresholds
+    lambda_functions_per_region: 400
+    apigateway_rest_apis_per_region: 50
+    stepfunctions_state_machines_per_region: 30
+
+    # Application Integration - per region
+    sqs_queues_per_region: 100
+    sns_topics_per_region: 50
+    eventbridge_rules_per_region: 100
+
+    # Security & Identity - global
+    iam_users_total: 200
+    iam_roles_total: 400
+    iam_policies_total: 100
+    kms_customer_keys_per_region: 50
+    secretsmanager_secrets_per_region: 100
+
+    # Management - per region
+    cloudwatch_alarms_per_region: 1000
+    cloudformation_stacks_per_region: 100
+
+    # Cost Thresholds (USD)
+    daily_budget_usd: 1000
+    monthly_budget_usd: 30000
+
+  # GCP Resource Count Thresholds
+  gcp:
+    # Compute - all zones
+    computeengine_instances_total: 50
+    computeengine_disks_total: 100
+    computeengine_snapshots_total: 200
+    computeengine_images_total: 50
+
+    # Container - all zones
+    gke_clusters_total: 5
+    gke_node_pools_total: 20
+
+    # Database - all regions
+    cloudsql_instances_total: 20
+    bigtable_instances_total: 5
+    spanner_instances_total: 3
+
+    # Storage - global
+    cloudstorage_buckets_total: 100
+    filestore_instances_total: 10
+
+    # Networking - all regions
+    vpc_networks_total: 5
+    vpc_subnets_total: 50
+    vpc_firewall_rules_total: 100
+    loadbalancing_forwarding_rules_total: 20
+
+    # Serverless - all regions
+    cloudfunctions_functions_total: 400
+    cloudrun_services_total: 50
+    appengine_services_total: 20
+
+    # Analytics - global
+    bigquery_datasets_total: 50
+    bigquery_tables_total: 500
+
+    # Application Integration - global
+    pubsub_topics_total: 100
+    pubsub_subscriptions_total: 200
+
+    # Security & Identity - global
+    iam_service_accounts_total: 200
+    kms_keys_total: 50
+    secretmanager_secrets_total: 100
+
+    # Cost Thresholds (USD)
+    daily_budget_usd: 1000
+    monthly_budget_usd: 30000
+
+  # Azure Resource Count Thresholds
+  azure:
+    # Compute - all regions
+    virtualmachines_vms_total: 50
+    virtualmachines_vm_scale_sets_total: 10
+    virtualmachines_disks_total: 100
+    virtualmachines_snapshots_total: 200
+
+    # Container - all regions
+    aks_clusters_total: 5
+    containerinstances_container_groups_total: 50
+    containerregistry_registries_total: 10
+
+    # Database - all regions
+    sqldatabase_servers_total: 20
+    sqldatabase_databases_total: 50
+    mysql_servers_total: 10
+    postgresql_servers_total: 10
+    cosmosdb_accounts_total: 10
+    rediscache_caches_total: 10
+
+    # Storage - all regions
+    storage_storage_accounts_total: 100
+    storage_file_shares_total: 200
+    storage_blob_containers_total: 500
+
+    # Networking - all regions
+    virtualnetwork_vnets_total: 10
+    virtualnetwork_subnets_total: 50
+    virtualnetwork_nsgs_total: 100
+    loadbalancer_load_balancers_total: 20
+    applicationgateway_app_gateways_total: 10
+    virtualnetwork_public_ips_total: 100
+
+    # Serverless - all regions
+    functionapps_function_apps_total: 400
+    appservice_web_apps_total: 100
+    logicapps_workflows_total: 50
+
+    # Application Integration - all regions
+    eventhub_namespaces_total: 20
+    servicebus_namespaces_total: 20
+
+    # Security & Identity - all regions
+    keyvault_vaults_total: 50
+    managedidentity_user_assigned_identities_total: 100
+
+    # Cost Thresholds (USD)
+    daily_budget_usd: 1000
+    monthly_budget_usd: 30000
 
 # Resources to Monitor
 resources_to_monitor:
