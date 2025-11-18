@@ -1,0 +1,155 @@
+# Multi-Cloud Monitoring Configuration
+
+# Elasticsearch Configuration
+elasticsearch:
+  host: "localhost:9200"
+  index: "cloud-usage-metrics"
+  username: null
+  password: null
+  api_key: null
+  ssl: false
+
+# Email Alert Configuration
+alerting:
+  enabled: true
+  smtp:
+    host: "smtp.gmail.com"
+    port: 587
+    use_tls: true
+    username: "your-email@gmail.com"
+    password: "your-app-password"
+  recipients:
+    - "admin@example.com"
+    - "devops@example.com"
+
+# Monitoring Interval (seconds)
+monitoring_interval: 300  # 5 minutes
+
+# Cloud Provider Credentials
+aws:
+  enabled: true
+  accounts:
+    - name: "production"
+      access_key_id: "${AWS_ACCESS_KEY_ID}"
+      secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+      regions:
+        - "us-east-1"
+        - "us-west-2"
+    - name: "development"
+      access_key_id: "${AWS_DEV_ACCESS_KEY_ID}"
+      secret_access_key: "${AWS_DEV_SECRET_ACCESS_KEY}"
+      regions:
+        - "us-east-1"
+
+gcp:
+  enabled: true
+  projects:
+    - name: "production-project"
+      project_id: "my-prod-project-123456"
+      credentials_file: "/path/to/gcp-prod-credentials.json"
+    - name: "development-project"
+      project_id: "my-dev-project-789012"
+      credentials_file: "/path/to/gcp-dev-credentials.json"
+
+azure:
+  enabled: true
+  subscriptions:
+    - name: "production"
+      subscription_id: "${AZURE_SUBSCRIPTION_ID}"
+      tenant_id: "${AZURE_TENANT_ID}"
+      client_id: "${AZURE_CLIENT_ID}"
+      client_secret: "${AZURE_CLIENT_SECRET}"
+    - name: "development"
+      subscription_id: "${AZURE_DEV_SUBSCRIPTION_ID}"
+      tenant_id: "${AZURE_TENANT_ID}"
+      client_id: "${AZURE_DEV_CLIENT_ID}"
+      client_secret: "${AZURE_DEV_CLIENT_SECRET}"
+
+# Resource Thresholds for Alerting
+thresholds:
+  # Compute/VM Thresholds
+  compute:
+    cpu_utilization_percent: 80
+    memory_utilization_percent: 85
+    disk_utilization_percent: 90
+    running_instances_count: 50
+
+  # Storage Thresholds
+  storage:
+    bucket_size_gb: 1000
+    bucket_object_count: 1000000
+    total_storage_gb: 5000
+
+  # Database Thresholds
+  database:
+    cpu_utilization_percent: 75
+    memory_utilization_percent: 80
+    storage_utilization_percent: 85
+    connection_count: 500
+
+  # Network Thresholds
+  network:
+    bandwidth_mbps: 1000
+    data_transfer_gb_per_day: 500
+    load_balancer_requests_per_minute: 10000
+
+  # Cost Thresholds (USD per day)
+  cost:
+    daily_spend: 1000
+    monthly_projection: 30000
+
+  # Lambda/Functions Thresholds
+  serverless:
+    invocation_count_per_hour: 100000
+    error_rate_percent: 5
+    duration_ms_p99: 5000
+
+# Resources to Monitor
+resources_to_monitor:
+  aws:
+    - EC2  # Virtual Machines
+    - RDS  # Databases
+    - S3   # Object Storage
+    - Lambda  # Serverless Functions
+    - ELB  # Load Balancers
+    - CloudWatch  # Metrics
+    - EBS  # Block Storage
+    - VPC  # Networking
+    - DynamoDB  # NoSQL Database
+    - ElastiCache  # Cache
+
+  gcp:
+    - ComputeEngine  # Virtual Machines
+    - CloudSQL  # Databases
+    - CloudStorage  # Object Storage
+    - CloudFunctions  # Serverless Functions
+    - CloudLoadBalancing  # Load Balancers
+    - CloudMonitoring  # Metrics
+    - PersistentDisk  # Block Storage
+    - VPC  # Networking
+    - BigQuery  # Data Warehouse
+    - Memorystore  # Cache
+
+  azure:
+    - VirtualMachines  # Virtual Machines
+    - SQLDatabase  # Databases
+    - BlobStorage  # Object Storage
+    - Functions  # Serverless Functions
+    - LoadBalancer  # Load Balancers
+    - Monitor  # Metrics
+    - Disks  # Block Storage
+    - VirtualNetwork  # Networking
+    - CosmosDB  # NoSQL Database
+    - RedisCache  # Cache
+
+# Dashboard Configuration
+dashboard:
+  refresh_interval: 30  # seconds
+  retention_days: 90
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "cloud-monitor.log"
+  max_size_mb: 100
+  backup_count: 5
