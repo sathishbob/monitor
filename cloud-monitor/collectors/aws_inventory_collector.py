@@ -452,117 +452,959 @@ class AWSInventoryCollector:
         except Exception as e:
             return []
 
-    # Continue with stub methods for all other services...
+    # Container Services
     def count_ecs_services(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count ECS services across all clusters."""
+        try:
+            session = self.get_session(region)
+            ecs = session.client('ecs')
+
+            # Get all clusters
+            clusters_response = ecs.list_clusters()
+            cluster_arns = clusters_response.get('clusterArns', [])
+
+            total_services = 0
+            for cluster_arn in cluster_arns:
+                services_response = ecs.list_services(cluster=cluster_arn)
+                total_services += len(services_response.get('serviceArns', []))
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'ECS',
+                'resource_type': 'services',
+                'total_count': total_services,
+                'cluster_count': len(cluster_arns)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting ECS services in {region}: {e}")
+            return []
 
     def count_ecr_repositories(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count ECR repositories."""
+        try:
+            session = self.get_session(region)
+            ecr = session.client('ecr')
 
+            repositories = []
+            paginator = ecr.get_paginator('describe_repositories')
+            for page in paginator.paginate():
+                repositories.extend(page['repositories'])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'ECR',
+                'resource_type': 'repositories',
+                'total_count': len(repositories)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting ECR repositories in {region}: {e}")
+            return []
+
+    # Database Services
     def count_rds_clusters(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count RDS Aurora clusters."""
+        try:
+            session = self.get_session(region)
+            rds = session.client('rds')
+
+            response = rds.describe_db_clusters()
+            clusters = response['DBClusters']
+
+            engine_counts = {}
+            for cluster in clusters:
+                engine = cluster['Engine']
+                engine_counts[engine] = engine_counts.get(engine, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'RDS',
+                'resource_type': 'clusters',
+                'total_count': len(clusters),
+                'engine_breakdown': engine_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting RDS clusters in {region}: {e}")
+            return []
 
     def count_elasticache_clusters(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count ElastiCache clusters (Redis and Memcached)."""
+        try:
+            session = self.get_session(region)
+            elasticache = session.client('elasticache')
+
+            response = elasticache.describe_cache_clusters()
+            clusters = response['CacheClusters']
+
+            engine_counts = {}
+            for cluster in clusters:
+                engine = cluster['Engine']
+                engine_counts[engine] = engine_counts.get(engine, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'ElastiCache',
+                'resource_type': 'clusters',
+                'total_count': len(clusters),
+                'engine_breakdown': engine_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting ElastiCache clusters in {region}: {e}")
+            return []
 
     def count_redshift_clusters(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count Redshift data warehouse clusters."""
+        try:
+            session = self.get_session(region)
+            redshift = session.client('redshift')
 
+            response = redshift.describe_clusters()
+            clusters = response['Clusters']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'Redshift',
+                'resource_type': 'clusters',
+                'total_count': len(clusters)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting Redshift clusters in {region}: {e}")
+            return []
+
+    # Storage Services
     def count_efs_filesystems(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count EFS file systems."""
+        try:
+            session = self.get_session(region)
+            efs = session.client('efs')
+
+            response = efs.describe_file_systems()
+            filesystems = response['FileSystems']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'EFS',
+                'resource_type': 'filesystems',
+                'total_count': len(filesystems)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting EFS filesystems in {region}: {e}")
+            return []
 
     def count_fsx_filesystems(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count FSx file systems (Windows, Lustre, etc.)."""
+        try:
+            session = self.get_session(region)
+            fsx = session.client('fsx')
 
+            response = fsx.describe_file_systems()
+            filesystems = response['FileSystems']
+
+            type_counts = {}
+            for fs in filesystems:
+                fs_type = fs['FileSystemType']
+                type_counts[fs_type] = type_counts.get(fs_type, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'FSx',
+                'resource_type': 'filesystems',
+                'total_count': len(filesystems),
+                'type_breakdown': type_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting FSx filesystems in {region}: {e}")
+            return []
+
+    # Networking Services
     def count_subnets(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count subnets."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_subnets()
+            subnets = response['Subnets']
+
+            # Count by VPC
+            vpc_counts = {}
+            for subnet in subnets:
+                vpc_id = subnet['VpcId']
+                vpc_counts[vpc_id] = vpc_counts.get(vpc_id, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'subnets',
+                'total_count': len(subnets),
+                'vpc_breakdown': vpc_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting subnets in {region}: {e}")
+            return []
 
     def count_security_groups(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count security groups."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_security_groups()
+            security_groups = response['SecurityGroups']
+
+            # Count by VPC
+            vpc_counts = {}
+            for sg in security_groups:
+                vpc_id = sg.get('VpcId', 'EC2-Classic')
+                vpc_counts[vpc_id] = vpc_counts.get(vpc_id, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'security_groups',
+                'total_count': len(security_groups),
+                'vpc_breakdown': vpc_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting security groups in {region}: {e}")
+            return []
 
     def count_target_groups(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count target groups for load balancers."""
+        try:
+            session = self.get_session(region)
+            elbv2 = session.client('elbv2')
+
+            response = elbv2.describe_target_groups()
+            target_groups = response['TargetGroups']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'ELB',
+                'resource_type': 'target_groups',
+                'total_count': len(target_groups)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting target groups in {region}: {e}")
+            return []
 
     def count_nat_gateways(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count NAT gateways."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_nat_gateways()
+            nat_gateways = response['NatGateways']
+
+            # Filter out deleted ones
+            active = [ng for ng in nat_gateways if ng['State'] != 'deleted']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'nat_gateways',
+                'total_count': len(active)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting NAT gateways in {region}: {e}")
+            return []
 
     def count_internet_gateways(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count internet gateways."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_internet_gateways()
+            igws = response['InternetGateways']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'internet_gateways',
+                'total_count': len(igws)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting internet gateways in {region}: {e}")
+            return []
 
     def count_route_tables(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count route tables."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_route_tables()
+            route_tables = response['RouteTables']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'route_tables',
+                'total_count': len(route_tables)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting route tables in {region}: {e}")
+            return []
 
     def count_network_acls(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count network ACLs."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
+
+            response = ec2.describe_network_acls()
+            nacls = response['NetworkAcls']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'network_acls',
+                'total_count': len(nacls)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting network ACLs in {region}: {e}")
+            return []
 
     def count_vpc_endpoints(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count VPC endpoints."""
+        try:
+            session = self.get_session(region)
+            ec2 = session.client('ec2')
 
+            response = ec2.describe_vpc_endpoints()
+            endpoints = response['VpcEndpoints']
+
+            type_counts = {}
+            for endpoint in endpoints:
+                ep_type = endpoint['VpcEndpointType']
+                type_counts[ep_type] = type_counts.get(ep_type, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'VPC',
+                'resource_type': 'vpc_endpoints',
+                'total_count': len(endpoints),
+                'type_breakdown': type_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting VPC endpoints in {region}: {e}")
+            return []
+
+    # Serverless Services
     def count_api_gateways(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count API Gateway REST APIs."""
+        try:
+            session = self.get_session(region)
+            apigateway = session.client('apigateway')
+
+            response = apigateway.get_rest_apis()
+            apis = response['items']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'APIGateway',
+                'resource_type': 'rest_apis',
+                'total_count': len(apis)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting API Gateways in {region}: {e}")
+            return []
 
     def count_step_functions(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count Step Functions state machines."""
+        try:
+            session = self.get_session(region)
+            stepfunctions = session.client('stepfunctions')
 
+            response = stepfunctions.list_state_machines()
+            state_machines = response['stateMachines']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'StepFunctions',
+                'resource_type': 'state_machines',
+                'total_count': len(state_machines)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting Step Functions in {region}: {e}")
+            return []
+
+    # Analytics & Big Data
     def count_emr_clusters(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count EMR clusters."""
+        try:
+            session = self.get_session(region)
+            emr = session.client('emr')
+
+            # Get active and terminated clusters
+            response = emr.list_clusters()
+            clusters = response['Clusters']
+
+            state_counts = {}
+            for cluster in clusters:
+                state = cluster['Status']['State']
+                state_counts[state] = state_counts.get(state, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'EMR',
+                'resource_type': 'clusters',
+                'total_count': len(clusters),
+                'state_breakdown': state_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting EMR clusters in {region}: {e}")
+            return []
 
     def count_kinesis_streams(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count Kinesis data streams."""
+        try:
+            session = self.get_session(region)
+            kinesis = session.client('kinesis')
+
+            response = kinesis.list_streams()
+            stream_names = response['StreamNames']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'Kinesis',
+                'resource_type': 'streams',
+                'total_count': len(stream_names)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting Kinesis streams in {region}: {e}")
+            return []
 
     def count_glue_jobs(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count AWS Glue ETL jobs."""
+        try:
+            session = self.get_session(region)
+            glue = session.client('glue')
 
+            response = glue.get_jobs()
+            jobs = response['Jobs']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'Glue',
+                'resource_type': 'jobs',
+                'total_count': len(jobs)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting Glue jobs in {region}: {e}")
+            return []
+
+    # Application Integration
     def count_sqs_queues(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count SQS queues."""
+        try:
+            session = self.get_session(region)
+            sqs = session.client('sqs')
+
+            response = sqs.list_queues()
+            queue_urls = response.get('QueueUrls', [])
+
+            # Determine FIFO vs standard
+            fifo_count = sum(1 for url in queue_urls if url.endswith('.fifo'))
+            standard_count = len(queue_urls) - fifo_count
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'SQS',
+                'resource_type': 'queues',
+                'total_count': len(queue_urls),
+                'fifo_count': fifo_count,
+                'standard_count': standard_count
+            }]
+        except Exception as e:
+            logger.error(f"Error counting SQS queues in {region}: {e}")
+            return []
 
     def count_sns_topics(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count SNS topics."""
+        try:
+            session = self.get_session(region)
+            sns = session.client('sns')
+
+            response = sns.list_topics()
+            topics = response.get('Topics', [])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'SNS',
+                'resource_type': 'topics',
+                'total_count': len(topics)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting SNS topics in {region}: {e}")
+            return []
 
     def count_eventbridge_rules(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count EventBridge rules."""
+        try:
+            session = self.get_session(region)
+            events = session.client('events')
 
+            response = events.list_rules()
+            rules = response['Rules']
+
+            # Count enabled vs disabled
+            enabled = sum(1 for rule in rules if rule['State'] == 'ENABLED')
+            disabled = len(rules) - enabled
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'EventBridge',
+                'resource_type': 'rules',
+                'total_count': len(rules),
+                'enabled_count': enabled,
+                'disabled_count': disabled
+            }]
+        except Exception as e:
+            logger.error(f"Error counting EventBridge rules in {region}: {e}")
+            return []
+
+    # Developer Tools
     def count_codecommit_repos(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CodeCommit repositories."""
+        try:
+            session = self.get_session(region)
+            codecommit = session.client('codecommit')
+
+            response = codecommit.list_repositories()
+            repos = response.get('repositories', [])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'CodeCommit',
+                'resource_type': 'repositories',
+                'total_count': len(repos)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CodeCommit repos in {region}: {e}")
+            return []
 
     def count_codebuild_projects(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CodeBuild projects."""
+        try:
+            session = self.get_session(region)
+            codebuild = session.client('codebuild')
+
+            response = codebuild.list_projects()
+            projects = response.get('projects', [])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'CodeBuild',
+                'resource_type': 'projects',
+                'total_count': len(projects)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CodeBuild projects in {region}: {e}")
+            return []
 
     def count_codepipeline_pipelines(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CodePipeline pipelines."""
+        try:
+            session = self.get_session(region)
+            codepipeline = session.client('codepipeline')
 
+            response = codepipeline.list_pipelines()
+            pipelines = response.get('pipelines', [])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'CodePipeline',
+                'resource_type': 'pipelines',
+                'total_count': len(pipelines)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CodePipeline pipelines in {region}: {e}")
+            return []
+
+    # Security & Identity (IAM is global, count once)
     def count_iam_users(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count IAM users (global service)."""
+        if region != 'us-east-1':  # Only count in one region
+            return []
+
+        try:
+            session = self.get_session(region)
+            iam = session.client('iam')
+
+            users = []
+            paginator = iam.get_paginator('list_users')
+            for page in paginator.paginate():
+                users.extend(page['Users'])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': 'global',
+                'service': 'IAM',
+                'resource_type': 'users',
+                'total_count': len(users)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting IAM users: {e}")
+            return []
 
     def count_iam_roles(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count IAM roles (global service)."""
+        if region != 'us-east-1':  # Only count in one region
+            return []
+
+        try:
+            session = self.get_session(region)
+            iam = session.client('iam')
+
+            roles = []
+            paginator = iam.get_paginator('list_roles')
+            for page in paginator.paginate():
+                roles.extend(page['Roles'])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': 'global',
+                'service': 'IAM',
+                'resource_type': 'roles',
+                'total_count': len(roles)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting IAM roles: {e}")
+            return []
 
     def count_iam_policies(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count customer-managed IAM policies (global service)."""
+        if region != 'us-east-1':  # Only count in one region
+            return []
+
+        try:
+            session = self.get_session(region)
+            iam = session.client('iam')
+
+            policies = []
+            paginator = iam.get_paginator('list_policies')
+            for page in paginator.paginate(Scope='Local'):  # Only customer-managed
+                policies.extend(page['Policies'])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': 'global',
+                'service': 'IAM',
+                'resource_type': 'policies',
+                'total_count': len(policies)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting IAM policies: {e}")
+            return []
 
     def count_kms_keys(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count KMS customer-managed keys."""
+        try:
+            session = self.get_session(region)
+            kms = session.client('kms')
+
+            keys = []
+            paginator = kms.get_paginator('list_keys')
+            for page in paginator.paginate():
+                keys.extend(page['Keys'])
+
+            # Filter to only customer-managed keys
+            customer_keys = []
+            for key in keys:
+                try:
+                    key_metadata = kms.describe_key(KeyId=key['KeyId'])
+                    if key_metadata['KeyMetadata']['KeyManager'] == 'CUSTOMER':
+                        customer_keys.append(key)
+                except:
+                    pass
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'KMS',
+                'resource_type': 'customer_keys',
+                'total_count': len(customer_keys)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting KMS keys in {region}: {e}")
+            return []
 
     def count_secrets(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count Secrets Manager secrets."""
+        try:
+            session = self.get_session(region)
+            secretsmanager = session.client('secretsmanager')
 
+            secrets = []
+            paginator = secretsmanager.get_paginator('list_secrets')
+            for page in paginator.paginate():
+                secrets.extend(page['SecretList'])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'SecretsManager',
+                'resource_type': 'secrets',
+                'total_count': len(secrets)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting secrets in {region}: {e}")
+            return []
+
+    # Management & Governance
     def count_cloudwatch_alarms(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CloudWatch alarms."""
+        try:
+            session = self.get_session(region)
+            cloudwatch = session.client('cloudwatch')
+
+            alarms = []
+            paginator = cloudwatch.get_paginator('describe_alarms')
+            for page in paginator.paginate():
+                alarms.extend(page['MetricAlarms'])
+
+            # Count by state
+            state_counts = {}
+            for alarm in alarms:
+                state = alarm['StateValue']
+                state_counts[state] = state_counts.get(state, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'CloudWatch',
+                'resource_type': 'alarms',
+                'total_count': len(alarms),
+                'state_breakdown': state_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CloudWatch alarms in {region}: {e}")
+            return []
 
     def count_cloudformation_stacks(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CloudFormation stacks."""
+        try:
+            session = self.get_session(region)
+            cfn = session.client('cloudformation')
+
+            response = cfn.list_stacks(
+                StackStatusFilter=[
+                    'CREATE_IN_PROGRESS', 'CREATE_COMPLETE', 'ROLLBACK_IN_PROGRESS',
+                    'ROLLBACK_COMPLETE', 'UPDATE_IN_PROGRESS', 'UPDATE_COMPLETE',
+                    'UPDATE_ROLLBACK_IN_PROGRESS', 'UPDATE_ROLLBACK_COMPLETE'
+                ]
+            )
+            stacks = response['StackSummaries']
+
+            status_counts = {}
+            for stack in stacks:
+                status = stack['StackStatus']
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'CloudFormation',
+                'resource_type': 'stacks',
+                'total_count': len(stacks),
+                'status_breakdown': status_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CloudFormation stacks in {region}: {e}")
+            return []
 
     def count_config_rules(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count AWS Config rules."""
+        try:
+            session = self.get_session(region)
+            config = session.client('config')
 
+            response = config.describe_config_rules()
+            rules = response['ConfigRules']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'Config',
+                'resource_type': 'rules',
+                'total_count': len(rules)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting Config rules in {region}: {e}")
+            return []
+
+    # Content Delivery (CloudFront is global)
     def count_cloudfront_distributions(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count CloudFront distributions (global service)."""
+        if region != 'us-east-1':  # Only count in one region
+            return []
 
+        try:
+            session = self.get_session(region)
+            cloudfront = session.client('cloudfront')
+
+            response = cloudfront.list_distributions()
+            distributions = response.get('DistributionList', {}).get('Items', [])
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': 'global',
+                'service': 'CloudFront',
+                'resource_type': 'distributions',
+                'total_count': len(distributions)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting CloudFront distributions: {e}")
+            return []
+
+    # Machine Learning
     def count_sagemaker_endpoints(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count SageMaker endpoints."""
+        try:
+            session = self.get_session(region)
+            sagemaker = session.client('sagemaker')
+
+            response = sagemaker.list_endpoints()
+            endpoints = response['Endpoints']
+
+            status_counts = {}
+            for endpoint in endpoints:
+                status = endpoint['EndpointStatus']
+                status_counts[status] = status_counts.get(status, 0) + 1
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'SageMaker',
+                'resource_type': 'endpoints',
+                'total_count': len(endpoints),
+                'status_breakdown': status_counts
+            }]
+        except Exception as e:
+            logger.error(f"Error counting SageMaker endpoints in {region}: {e}")
+            return []
 
     def count_sagemaker_models(self, region: str) -> List[Dict[str, Any]]:
-        return []
+        """Count SageMaker models."""
+        try:
+            session = self.get_session(region)
+            sagemaker = session.client('sagemaker')
+
+            response = sagemaker.list_models()
+            models = response['Models']
+
+            return [{
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'cloud_provider': 'aws',
+                'account': self.account_name,
+                'region': region,
+                'service': 'SageMaker',
+                'resource_type': 'models',
+                'total_count': len(models)
+            }]
+        except Exception as e:
+            logger.error(f"Error counting SageMaker models in {region}: {e}")
+            return []
 
 
 __all__ = ['AWSInventoryCollector']
