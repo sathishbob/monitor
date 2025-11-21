@@ -1,0 +1,93 @@
+# Cloud User Activity Tracking Configuration
+
+# Elasticsearch Configuration
+elasticsearch:
+  host: "localhost:9200"
+  index: "cloud-user-activities"
+  username: null
+  password: null
+  api_key: null
+  ssl: false
+
+# Email Alert Configuration
+alerting:
+  enabled: true
+  smtp:
+    host: "smtp.gmail.com"
+    port: 587
+    use_tls: true
+    username: "your-email@gmail.com"
+    password: "your-app-password"
+  recipients:
+    - "security@example.com"
+    - "admin@example.com"
+
+# Monitoring Configuration
+monitoring:
+  interval_minutes: 5  # How often to poll for new activities
+  lookback_minutes: 5  # How far back to look for activities
+
+# Anomaly Detection Configuration
+anomaly_detection:
+  enabled: true
+  error_rate_threshold: 0.20  # Alert if >20% error rate
+  action_spike_multiplier: 3.0  # Alert if actions >3x normal
+  unusual_hour_start: 22  # 10 PM
+  unusual_hour_end: 6  # 6 AM
+  mass_delete_threshold: 10  # Alert on 10+ delete operations
+
+# Cloud Provider Credentials
+aws:
+  enabled: true
+  accounts:
+    - name: "production"
+      access_key_id: "${AWS_ACCESS_KEY_ID}"
+      secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+      regions:
+        - "us-east-1"
+        - "us-west-2"
+
+    - name: "development"
+      access_key_id: "${AWS_DEV_ACCESS_KEY_ID}"
+      secret_access_key: "${AWS_DEV_SECRET_ACCESS_KEY}"
+      regions:
+        - "us-east-1"
+
+gcp:
+  enabled: true
+  projects:
+    - name: "production-project"
+      project_id: "my-prod-project-123456"
+      credentials_file: "/path/to/gcp-prod-credentials.json"
+
+    - name: "development-project"
+      project_id: "my-dev-project-789012"
+      credentials_file: "/path/to/gcp-dev-credentials.json"
+
+azure:
+  enabled: true
+  subscriptions:
+    - name: "production"
+      subscription_id: "${AZURE_SUBSCRIPTION_ID}"
+      tenant_id: "${AZURE_TENANT_ID}"
+      client_id: "${AZURE_CLIENT_ID}"
+      client_secret: "${AZURE_CLIENT_SECRET}"
+
+    - name: "development"
+      subscription_id: "${AZURE_DEV_SUBSCRIPTION_ID}"
+      tenant_id: "${AZURE_TENANT_ID}"
+      client_id: "${AZURE_DEV_CLIENT_ID}"
+      client_secret: "${AZURE_DEV_CLIENT_SECRET}"
+
+# Dashboard Configuration
+dashboard:
+  refresh_interval: 30  # seconds
+  retention_days: 90  # How long to keep activity data
+  max_events_display: 1000  # Max events to display in timeline
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "activity-monitor.log"
+  max_size_mb: 100
+  backup_count: 5
